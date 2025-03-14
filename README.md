@@ -63,13 +63,13 @@
    ollama pull ollama run llama3.2
    ```
 
-   *(Other models like **``** can also be used.)*
+   *(Other models like **`Gemma3`** can also be used.)*
 
 ## Setup
 
 1. **Start the Ollama Server:** Ensure Ollama is running in the background.
 
-2. **Start the ****\`\`**** Server:**
+2. **Start the MCP Server:**
 
    ```bash
    blender-mcp
