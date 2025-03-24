@@ -1,11 +1,11 @@
 [project]
 name = "blender-open-mcp"
-version = "0.1.0"
+version = "0.2.0"
 description = "Blender integration with local AI models via MCP and Ollama"
 readme = "README.md"
 requires-python = ">=3.10"
 authors = [
-    {name = "Nirajan Dhakal", email = "nirajandhakal.dev@gmail.com"}
+    {name = "Nirajan Dhakal"}
 ]
 license = {text = "MIT"}
 classifiers = [
