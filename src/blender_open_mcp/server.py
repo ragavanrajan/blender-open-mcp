@@ -1,16 +1,18 @@
+# server.py
 from mcp.server.fastmcp import FastMCP, Context, Image
 import socket
 import json
 import asyncio
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from contextlib import asynccontextmanager
-from typing import AsyncIterator, Dict, Any, List
+from typing import AsyncIterator, Dict, Any, List, Optional
 import httpx
 from io import BytesIO
 import base64
-import argparse  # Import argparse
-
+import argparse
+import os
+from urllib.parse import urlparse
 
 # Configure logging
 logging.basicConfig(level=logging.INFO,
@@ -21,90 +23,111 @@ logger = logging.getLogger("BlenderMCPServer")
 class BlenderConnection:
     host: str
     port: int
-    sock: socket.socket = None
+    sock: Optional[socket.socket] = None
+    timeout: float = 15.0  # Added timeout as a property
+
+    def __post_init__(self):
+         if not isinstance(self.host, str):
+             raise ValueError("Host must be a string")
+         if not isinstance(self.port, int):
+             raise ValueError("Port must be an int")
 
     def connect(self) -> bool:
-        if self.sock: return True
+        if self.sock:
+            return True
         try:
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.sock.connect((self.host, self.port))
             logger.info(f"Connected to Blender at {self.host}:{self.port}")
+            self.sock.settimeout(self.timeout) # Set timeout on socket
             return True
         except Exception as e:
             logger.error(f"Failed to connect to Blender: {e!s}")
             self.sock = None
             return False
 
-    def disconnect(self):
+    def disconnect(self) -> None:
         if self.sock:
-            try: self.sock.close()
-            except Exception as e: logger.error(f"Error disconnecting: {e!s}")
-            finally: self.sock = None
+            try:
+                self.sock.close()
+            except Exception as e:
+                logger.error(f"Error disconnecting: {e!s}")
+            finally:
+                self.sock = None
 
-    def receive_full_response(self, sock, buffer_size=8192):
-        chunks = []
-        sock.settimeout(15.0)
+    def _receive_full_response(self, buffer_size: int = 8192) -> bytes:
+        """Receive data with timeout using a loop."""
+        chunks: List[bytes] = []
         try:
             while True:
                 try:
-                    chunk = sock.recv(buffer_size)
+                    chunk = self.sock.recv(buffer_size)
                     if not chunk:
-                        if not chunks: raise Exception("Connection closed before data")
-                        break
+                       if not chunks:
+                            raise Exception("Connection closed before data")
+                       break
                     chunks.append(chunk)
                     try:
                         data = b''.join(chunks)
-                        json.loads(data.decode('utf-8'))
-                        logger.info(f"Received response ({len(data)} bytes)")
+                        json.loads(data.decode('utf-8'))  # Check if it is valid json
+                        logger.debug(f"Received response ({len(data)} bytes)")
                         return data
-                    except json.JSONDecodeError: continue
+                    except json.JSONDecodeError:
+                        continue # Wait for more JSON data
                 except socket.timeout:
                     logger.warning("Socket timeout during receive")
-                    break
+                    break # Stop listening to socket
                 except (ConnectionError, BrokenPipeError, ConnectionResetError) as e:
                     logger.error(f"Socket connection error: {e!s}")
-                    raise
-        except socket.timeout: logger.warning("Socket timeout")
+                    self.sock = None
+                    raise # re-raise to outer error handler
+            if chunks: # If chunks exist make them into data to return
+                data = b''.join(chunks)
+                logger.debug(f"Returning received data ({len(data)} bytes)")
+                try:
+                    json.loads(data.decode('utf-8'))
+                    return data # return data if valid json
+                except json.JSONDecodeError:
+                    raise Exception("Incomplete JSON")
+            else: raise Exception("No data received") # Raise if no data at all received
+        except socket.timeout: logger.warning("Socket timeout during receive")
         except Exception as e: logger.error(f"Error during receive: {e!s}"); raise
-        if chunks:
-            data = b''.join(chunks)
-            logger.info(f"Returning data ({len(data)} bytes)")
-            try:
-                json.loads(data.decode('utf-8'))
-                return data
-            except json.JSONDecodeError: raise Exception("Incomplete JSON")
-        else: raise Exception("No data received")
 
-    def send_command(self, command_type: str, params: Dict[str, Any] = None) -> Dict[str, Any]:
-        if not self.sock and not self.connect(): raise ConnectionError("Not connected")
-        command = {"type": command_type, "params": params or {}}
-        try:
-            logger.info(f"Sending command: {command_type} with params: {params}")
-            self.sock.sendall(json.dumps(command).encode('utf-8'))
-            logger.info(f"Command sent, waiting for response...")
-            self.sock.settimeout(15.0)
-            response_data = self.receive_full_response(self.sock)
-            logger.info(f"Received {len(response_data)} bytes")
-            response = json.loads(response_data.decode('utf-8'))
-            logger.info(f"Response status: {response.get('status', 'unknown')}")
-            if response.get("status") == "error":
-                logger.error(f"Blender error: {response.get('message')}")
-                raise Exception(response.get("message", "Unknown Blender error"))
-            return response.get("result", {})
-        except socket.timeout:
-            logger.error("Socket timeout from Blender"); self.sock = None
-            raise Exception("Timeout waiting for Blender - simplify request")
-        except (ConnectionError, BrokenPipeError, ConnectionResetError) as e:
-            logger.error(f"Socket connection error: {e!s}"); self.sock = None
-            raise Exception(f"Connection to Blender lost: {e!s}")
-        except json.JSONDecodeError as e:
-            logger.error(f"Invalid JSON response: {e!s}")
-            if 'response_data' in locals() and response_data:
+
+    def send_command(self, command_type: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+         if not self.sock and not self.connect():
+            raise ConnectionError("Not connected")
+         command = {"type": command_type, "params": params or {}}
+         try:
+              logger.info(f"Sending command: {command_type} with params: {params}")
+              self.sock.sendall(json.dumps(command).encode('utf-8'))
+              logger.info(f"Command sent, waiting for response...")
+              response_data = self._receive_full_response()
+              logger.debug(f"Received response ({len(response_data)} bytes)")
+              response = json.loads(response_data.decode('utf-8'))
+              logger.info(f"Response status: {response.get('status', 'unknown')}")
+              if response.get("status") == "error":
+                 logger.error(f"Blender error: {response.get('message')}")
+                 raise Exception(response.get("message", "Unknown Blender error"))
+              return response.get("result", {})
+
+         except socket.timeout:
+             logger.error("Socket timeout from Blender")
+             self.sock = None # reset socket connection
+             raise Exception("Timeout waiting for Blender - simplify request")
+         except (ConnectionError, BrokenPipeError, ConnectionResetError) as e:
+             logger.error(f"Socket connection error: {e!s}")
+             self.sock = None # reset socket connection
+             raise Exception(f"Connection to Blender lost: {e!s}")
+         except json.JSONDecodeError as e:
+             logger.error(f"Invalid JSON response: {e!s}")
+             if 'response_data' in locals() and response_data:
                 logger.error(f"Raw (first 200): {response_data[:200]}")
-            raise Exception(f"Invalid response from Blender: {e!s}")
-        except Exception as e:
-            logger.error(f"Error communicating with Blender: {e!s}");self.sock = None
-            raise Exception(f"Communication error: {e!s}")
+             raise Exception(f"Invalid response from Blender: {e!s}")
+         except Exception as e:
+              logger.error(f"Error communicating with Blender: {e!s}")
+              self.sock = None # reset socket connection
+              raise Exception(f"Communication error: {e!s}")
 
 
 @asynccontextmanager
@@ -133,7 +156,7 @@ _polyhaven_enabled = False
 _ollama_model = ""
 _ollama_url = "http://localhost:11434"
 
-def get_blender_connection():
+def get_blender_connection() -> BlenderConnection:
     global _blender_connection, _polyhaven_enabled
     if _blender_connection:
         try:
@@ -142,8 +165,10 @@ def get_blender_connection():
             return _blender_connection
         except Exception as e:
             logger.warning(f"Existing connection invalid: {e!s}")
-            try: _blender_connection.disconnect()
-            except: pass
+            try:
+                _blender_connection.disconnect()
+            except:
+                pass
             _blender_connection = None
     if _blender_connection is None:
         _blender_connection = BlenderConnection(host="localhost", port=9876)
@@ -155,12 +180,15 @@ def get_blender_connection():
     return _blender_connection
 
 
-async def query_ollama(prompt: str, context: List[Dict] = None, image: Image = None) -> str:
+async def query_ollama(prompt: str, context: Optional[List[Dict]] = None, image: Optional[Image] = None) -> str:
     global _ollama_model, _ollama_url
+
     payload = {"prompt": prompt, "model": _ollama_model, "format": "json", "stream": False}
-    if context: payload["context"] = context
+    if context:
+        payload["context"] = context
     if image:
-        if image.data: payload["images"] = [image.data]
+        if image.data:
+            payload["images"] = [image.data]
         elif image.path:
             try:
                 with open(image.path, "rb") as image_file:
@@ -169,15 +197,17 @@ async def query_ollama(prompt: str, context: List[Dict] = None, image: Image = N
             except FileNotFoundError:
                 logger.error(f"Image file not found: {image.path}")
                 return "Error: Image file not found."
-        else: logger.warning("Image without data or path. Ignoring.")
+        else:
+            logger.warning("Image without data or path. Ignoring.")
 
     try:
         async with httpx.AsyncClient() as client:
             response = await client.post(f"{_ollama_url}/api/generate", json=payload, timeout=60.0)
             response.raise_for_status()  # Raise HTTPStatusError for bad status
             response_data = response.json()
-            logger.debug(f"Raw Ollama response: {response_data}") # Debug level
-            if "response" in response_data: return response_data["response"]
+            logger.debug(f"Raw Ollama response: {response_data}")
+            if "response" in response_data:
+                return response_data["response"]
             else:
                 logger.error(f"Unexpected response format: {response_data}")
                 return "Error: Unexpected response format from Ollama."
@@ -223,10 +253,10 @@ def get_object_info(ctx: Context, object_name: str) -> str:
 def create_object(
     ctx: Context,
     type: str = "CUBE",
-    name: str = None,
-    location: List[float] = None,
-    rotation: List[float] = None,
-    scale: List[float] = None
+    name: Optional[str] = None,
+    location: Optional[List[float]] = None,
+    rotation: Optional[List[float]] = None,
+    scale: Optional[List[float]] = None
 ) -> str:
     try:
         blender = get_blender_connection()
@@ -235,16 +265,17 @@ def create_object(
         if name: params["name"] = name
         result = blender.send_command("create_object", params)
         return f"Created {type} object: {result['name']}"
-    except Exception as e: return f"Error: {e!s}"
+    except Exception as e:
+        return f"Error: {e!s}"
 
 @mcp.tool()
 def modify_object(
     ctx: Context,
     name: str,
-    location: List[float] = None,
-    rotation: List[float] = None,
-    scale: List[float] = None,
-    visible: bool = None
+    location: Optional[List[float]] = None,
+    rotation: Optional[List[float]] = None,
+    scale: Optional[List[float]] = None,
+    visible: Optional[bool] = None
 ) -> str:
     try:
         blender = get_blender_connection()
@@ -255,7 +286,8 @@ def modify_object(
         if visible is not None: params["visible"] = visible
         result = blender.send_command("modify_object", params)
         return f"Modified object: {result['name']}"
-    except Exception as e: return f"Error: {e!s}"
+    except Exception as e:
+        return f"Error: {e!s}"
 
 @mcp.tool()
 def delete_object(ctx: Context, name: str) -> str:
@@ -263,14 +295,15 @@ def delete_object(ctx: Context, name: str) -> str:
         blender = get_blender_connection()
         blender.send_command("delete_object", {"name": name})
         return f"Deleted object: {name}"
-    except Exception as e: return f"Error: {e!s}"
+    except Exception as e:
+        return f"Error: {e!s}"
 
 @mcp.tool()
 def set_material(
     ctx: Context,
     object_name: str,
-    material_name: str = None,
-    color: List[float] = None
+    material_name: Optional[str] = None,
+    color: Optional[List[float]] = None
 ) -> str:
     try:
         blender = get_blender_connection()
@@ -279,7 +312,8 @@ def set_material(
         if color: params["color"] = color
         result = blender.send_command("set_material", params)
         return f"Applied material to {object_name}: {result.get('material_name', 'unknown')}"
-    except Exception as e: return f"Error: {e!s}"
+    except Exception as e:
+        return f"Error: {e!s}"
     
 @mcp.tool()
 def execute_blender_code(ctx: Context, code: str) -> str:
@@ -287,7 +321,8 @@ def execute_blender_code(ctx: Context, code: str) -> str:
         blender = get_blender_connection()
         result = blender.send_command("execute_code", {"code": code})
         return f"Code executed: {result.get('result', '')}"
-    except Exception as e: return f"Error: {e!s}"
+    except Exception as e:
+        return f"Error: {e!s}"
     
 @mcp.tool()
 def get_polyhaven_categories(ctx: Context, asset_type: str = "hdris") -> str:
@@ -301,10 +336,11 @@ def get_polyhaven_categories(ctx: Context, asset_type: str = "hdris") -> str:
                     "\n".join(f"- {cat}: {count}" for cat, count in
                       sorted(categories.items(), key=lambda x: x[1], reverse=True))
         return formatted
-    except Exception as e: return f"Error: {e!s}"
+    except Exception as e:
+        return f"Error: {e!s}"
 
 @mcp.tool()
-def search_polyhaven_assets(ctx: Context, asset_type: str = "all", categories: str = None) -> str:
+def search_polyhaven_assets(ctx: Context, asset_type: str = "all", categories: Optional[str] = None) -> str:
     try:
         blender = get_blender_connection()
         result = blender.send_command("search_polyhaven_assets",
@@ -321,11 +357,12 @@ def search_polyhaven_assets(ctx: Context, asset_type: str = "all", categories: s
                                         key=lambda x: x[1].get("download_count", 0),
                                         reverse=True))
         return formatted
-    except Exception as e: return f"Error: {e!s}"
+    except Exception as e:
+        return f"Error: {e!s}"
 
 @mcp.tool()
 def download_polyhaven_asset(ctx: Context, asset_id: str, asset_type: str,
-                             resolution: str = "1k", file_format: str = None) -> str:
+                             resolution: str = "1k", file_format: Optional[str] = None) -> str:
     try:
         blender = get_blender_connection()
         result = blender.send_command("download_polyhaven_asset", {
@@ -341,7 +378,8 @@ def download_polyhaven_asset(ctx: Context, asset_id: str, asset_type: str,
             elif asset_type == "models": return f"{message}. Model imported."
             return message
         return f"Failed: {result.get('message', 'Unknown')}"
-    except Exception as e: return f"Error: {e!s}"
+    except Exception as e:
+        return f"Error: {e!s}"
 
 @mcp.tool()
 def set_texture(ctx: Context, object_name: str, texture_id: str) -> str:
@@ -363,7 +401,8 @@ def set_texture(ctx: Context, object_name: str, texture_id: str) -> str:
                     for node in nodes)
             return output
         return f"Failed: {result.get('message', 'Unknown')}"
-    except Exception as e: return f"Error: {e!s}"
+    except Exception as e:
+        return f"Error: {e!s}"
 
 @mcp.tool()
 def get_polyhaven_status(ctx: Context) -> str:
@@ -371,7 +410,8 @@ def get_polyhaven_status(ctx: Context) -> str:
         blender = get_blender_connection()
         result = blender.send_command("get_polyhaven_status")
         return result.get("message", "")  # Return the message directly
-    except Exception as e: return f"Error: {e!s}"
+    except Exception as e:
+        return f"Error: {e!s}"
 
 @mcp.tool()
 async def set_ollama_model(ctx: Context, model_name: str) -> str:
@@ -384,7 +424,8 @@ async def set_ollama_model(ctx: Context, model_name: str) -> str:
                 _ollama_model = model_name
                 return f"Ollama model set to: {_ollama_model}"
             else: return f"Error: Could not find model '{model_name}'."
-    except Exception as e: return f"Error: Failed to communicate: {e!s}"
+    except Exception as e:
+        return f"Error: Failed to communicate: {e!s}"
 
 @mcp.tool()
 async def set_ollama_url(ctx: Context, url: str) -> str:
@@ -409,7 +450,8 @@ async def get_ollama_models(ctx: Context) -> str:
         return f"Error: Ollama API error: {e.response.status_code}"
     except httpx.RequestError as e:
         return "Error: Failed to connect to Ollama API."
-    except Exception as e: return f"Error: An unexpected error: {e!s}"
+    except Exception as e:
+        return f"Error: An unexpected error: {e!s}"
 
 @mcp.tool()
 async def render_image(ctx: Context, file_path: str = "render.png") -> str:
@@ -424,7 +466,8 @@ async def render_image(ctx: Context, file_path: str = "render.png") -> str:
                     return "Image Rendered Successfully."
             except Exception as exception:
                 return f"Blender rendered, however image could not be found. {exception!s}" # Use exception
-    except Exception as e: return f"Error: {e!s}"
+    except Exception as e:
+        return f"Error: {e!s}"
 
 def main():
     """Run the MCP server."""
@@ -456,4 +499,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()  
+    main()
