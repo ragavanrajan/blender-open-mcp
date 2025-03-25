@@ -60,7 +60,7 @@
 5. **Download an Ollama Model (if not already installed):**
 
    ```bash
-   ollama pull ollama run llama3.2
+   ollama run llama3.2
    ```
 
    *(Other models like **`Gemma3`** can also be used.)*
