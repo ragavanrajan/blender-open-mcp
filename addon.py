@@ -207,7 +207,8 @@ class BlenderMCPServer:
             print(f"Error in get_scene_info: {str(e)}")
             traceback.print_exc()
             return {"error": str(e)}
-        def render_scene(self, output_path=None, resolution_x=None, resolution_y=None):
+    
+    def render_scene(self, output_path=None, resolution_x=None, resolution_y=None):
         """Render the current scene"""
         try:
             if resolution_x is not None:
