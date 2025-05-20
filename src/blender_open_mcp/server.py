@@ -183,8 +183,12 @@ async def server_lifespan(server: FastMCP) -> AsyncIterator[Dict[str, Any]]:
         _blender_connection = None
     logger.info("BlenderMCP server shut down")
 
-# Server instance (set up later with command-line arguments)
-mcp = None
+# Initialize MCP server instance globally
+mcp = FastMCP(
+    "BlenderOpenMCP",
+    description="Blender integration with local AI models via Ollama",
+    lifespan=server_lifespan
+)
 
 _blender_connection = None
 _polyhaven_enabled = False
@@ -520,17 +524,11 @@ def main():
     args = parser.parse_args()
 
     # Set global variables from command-line arguments
-    global _ollama_url, _ollama_model, mcp
+    global _ollama_url, _ollama_model
     _ollama_url = args.ollama_url
     _ollama_model = args.ollama_model
 
-    # Now create the MCP server instance
-    mcp = FastMCP(
-        "BlenderOpenMCP",
-        description="Blender integration with local AI models via Ollama",
-        lifespan=server_lifespan
-    )
-
+    # MCP instance is already created globally
     mcp.run(host=args.host, port=args.port)
 
 
