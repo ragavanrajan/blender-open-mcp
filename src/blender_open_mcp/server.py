@@ -461,7 +461,7 @@ def get_polyhaven_status(ctx: Context) -> str:
 
 @mcp.tool()
 async def set_ollama_model(ctx: Context, model_name: str) -> str:
-    global _ollama_model
+    global _ollama_model, _ollama_url
     try:
         async with httpx.AsyncClient() as client:
             response = await client.post(f"{_ollama_url}/api/show",
@@ -483,6 +483,7 @@ async def set_ollama_url(ctx: Context, url: str) -> str:
 
 @mcp.tool()
 async def get_ollama_models(ctx: Context) -> str:
+    global _ollama_url
     try:
         async with httpx.AsyncClient() as client:
             response = await client.get(f"{_ollama_url}/api/tags", timeout=10.0)
@@ -523,6 +524,7 @@ def health_check(ctx: Context) -> str:
 @mcp.tool()
 def server_info(ctx: Context) -> str:
     """Get server information and status."""
+    global _ollama_url, _ollama_model
     import platform
     info = {
         "status": "running",
@@ -544,6 +546,8 @@ def server_info(ctx: Context) -> str:
 
 def main():
     """Run the MCP server."""
+    global _ollama_url, _ollama_model
+    
     parser = argparse.ArgumentParser(description="BlenderMCP Server")
     parser.add_argument("--ollama-url", type=str, default=_ollama_url,
                         help="URL of the Ollama server")
@@ -557,7 +561,6 @@ def main():
     args = parser.parse_args()
 
     # Set global variables from command-line arguments
-    global _ollama_url, _ollama_model
     _ollama_url = args.ollama_url
     _ollama_model = args.ollama_model
 
