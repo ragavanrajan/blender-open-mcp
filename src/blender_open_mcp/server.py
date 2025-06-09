@@ -531,6 +531,8 @@ def main():
     # MCP instance is already created globally
     mcp.run(host=args.host, port=args.port)
 
+# Expose the FastMCP instance as an ASGI app for Azure Web App deployment
+app = mcp.app
 
 if __name__ == "__main__":
     main()
