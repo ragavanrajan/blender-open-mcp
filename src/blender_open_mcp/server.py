@@ -175,6 +175,8 @@ async def server_lifespan(server: FastMCP) -> AsyncIterator[Dict[str, Any]]:
     except Exception as e:
         logger.warning(f"Could not connect to Blender on startup: {e!s}")
         logger.warning("Ensure Blender addon is running before using resources")
+        # Don't fail startup if Blender is not available - this is expected in Azure
+        logger.info("Server will start without Blender connection (connections will be attempted on tool use)")
     yield {}
     global _blender_connection
     if _blender_connection:
@@ -211,12 +213,16 @@ def get_blender_connection() -> BlenderConnection:
                 pass
             _blender_connection = None
     if _blender_connection is None:
-        _blender_connection = BlenderConnection(host="localhost", port=9876)
+        # Check for environment variables to override default connection
+        blender_host = os.environ.get("BLENDER_HOST", "localhost")
+        blender_port = int(os.environ.get("BLENDER_PORT", "9876"))
+        
+        _blender_connection = BlenderConnection(host=blender_host, port=blender_port)
         if not _blender_connection.connect():
-            logger.error("Failed to connect to Blender")
+            logger.error(f"Failed to connect to Blender at {blender_host}:{blender_port}")
             _blender_connection = None
-            raise Exception("Could not connect to Blender. Addon running?")
-        logger.info("Created new persistent connection to Blender")
+            raise Exception(f"Could not connect to Blender at {blender_host}:{blender_port}. Is Blender addon running?")
+        logger.info(f"Created new persistent connection to Blender at {blender_host}:{blender_port}")
     return _blender_connection
 
 
@@ -508,6 +514,33 @@ async def render_image(ctx: Context, file_path: str = "render.png") -> str:
                 return f"Blender rendered, however image could not be found. {exception!s}" # Use exception
     except Exception as e:
         return f"Error: {e!s}"
+
+@mcp.tool()
+def health_check(ctx: Context) -> str:
+    """Simple health check that doesn't require Blender connection."""
+    return "BlenderMCP server is running and healthy!"
+
+@mcp.tool()
+def server_info(ctx: Context) -> str:
+    """Get server information and status."""
+    import platform
+    info = {
+        "status": "running",
+        "python_version": platform.python_version(),
+        "platform": platform.platform(),
+        "ollama_url": _ollama_url,
+        "ollama_model": _ollama_model,
+        "blender_connection_status": "disconnected"
+    }
+    
+    # Try to check Blender connection without throwing error
+    try:
+        blender = get_blender_connection()
+        info["blender_connection_status"] = "connected"
+    except Exception as e:
+        info["blender_connection_error"] = str(e)
+    
+    return json.dumps(info, indent=2)
 
 def main():
     """Run the MCP server."""
