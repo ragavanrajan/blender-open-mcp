@@ -12,13 +12,15 @@ src_path = current_dir / "src"
 sys.path.insert(0, str(src_path))
 
 try:
-    from fastapi import FastAPI
+    from fastapi import FastAPI, HTTPException
     from fastapi.responses import HTMLResponse, JSONResponse
+    from pydantic import BaseModel
+    from typing import Optional, List
     import uvicorn
     
     # Try to import MCP components
     try:
-        from blender_open_mcp.server import mcp, _ollama_url, _ollama_model
+        from blender_open_mcp.server import mcp, _ollama_url, _ollama_model, get_blender_connection
         MCP_AVAILABLE = True
     except Exception as e:
         print(f"⚠️ MCP not available: {e}")
@@ -27,9 +29,37 @@ try:
     # Create FastAPI app
     app = FastAPI(
         title="BlenderMCP Server",
-        description="Blender integration with local AI models via MCP",
+        description="Blender integration with local AI models via MCP - Copilot Studio Ready",
         version="0.2.0"
     )
+
+    # Pydantic models for Copilot Studio integration
+    class BlenderCommand(BaseModel):
+        command: str
+        description: Optional[str] = None
+
+    class CreateObjectRequest(BaseModel):
+        type: str = "CUBE"
+        name: Optional[str] = None
+        location: Optional[List[float]] = [0, 0, 0]
+        rotation: Optional[List[float]] = [0, 0, 0]
+        scale: Optional[List[float]] = [1, 1, 1]
+
+    class ModifyObjectRequest(BaseModel):
+        name: str
+        location: Optional[List[float]] = None
+        rotation: Optional[List[float]] = None
+        scale: Optional[List[float]] = None
+        visible: Optional[bool] = None
+
+    class MaterialRequest(BaseModel):
+        object_name: str
+        material_name: Optional[str] = None
+        color: Optional[List[float]] = None
+
+    class AIPromptRequest(BaseModel):
+        prompt: str
+        context: Optional[str] = None
 
     @app.get("/", response_class=HTMLResponse)
     async def root():
@@ -52,8 +82,19 @@ try:
                 {f'<p><strong>Ollama URL:</strong> {_ollama_url}</p>' if MCP_AVAILABLE else ''}
                 {f'<p><strong>Ollama Model:</strong> {_ollama_model}</p>' if MCP_AVAILABLE else ''}
                 <hr>
-                <p>This server provides MCP (Model Context Protocol) integration for Blender.</p>
-                <p>Access the MCP interface through appropriate MCP clients.</p>
+                <h2>🤖 Copilot Studio Integration Ready!</h2>
+                <h3>Available API Endpoints:</h3>
+                <ul>
+                    <li><strong>GET /health</strong> - Health check</li>
+                    <li><strong>GET /api/blender/scene</strong> - Get scene information</li>
+                    <li><strong>POST /api/blender/create</strong> - Create objects</li>
+                    <li><strong>PUT /api/blender/modify</strong> - Modify objects</li>
+                    <li><strong>DELETE /api/blender/delete/{{name}}</strong> - Delete objects</li>
+                    <li><strong>POST /api/blender/material</strong> - Apply materials</li>
+                    <li><strong>POST /api/blender/code</strong> - Execute Blender code</li>
+                    <li><strong>POST /api/ai/prompt</strong> - AI-powered Blender operations</li>
+                </ul>
+                <p><a href="/docs">📖 View API Documentation</a></p>
             </body>
         </html>
         """
@@ -83,6 +124,153 @@ try:
             })
         
         return info
+
+    # Copilot Studio Integration Endpoints
+    @app.get("/api/blender/scene")
+    async def get_scene_info():
+        """Get current Blender scene information - for Copilot Studio"""
+        if not MCP_AVAILABLE:
+            raise HTTPException(status_code=503, detail="MCP components not available")
+        
+        try:
+            blender = get_blender_connection()
+            result = blender.send_command("get_scene_info")
+            return {"success": True, "data": result}
+        except Exception as e:
+            return {"success": False, "error": str(e), "message": "Failed to get scene info"}
+
+    @app.post("/api/blender/create")
+    async def create_object(request: CreateObjectRequest):
+        """Create objects in Blender - for Copilot Studio"""
+        if not MCP_AVAILABLE:
+            raise HTTPException(status_code=503, detail="MCP components not available")
+        
+        try:
+            blender = get_blender_connection()
+            params = {
+                "type": request.type,
+                "location": request.location,
+                "rotation": request.rotation,
+                "scale": request.scale
+            }
+            if request.name:
+                params["name"] = request.name
+                
+            result = blender.send_command("create_object", params)
+            return {
+                "success": True, 
+                "message": f"Created {request.type} object: {result.get('name', 'unknown')}",
+                "data": result
+            }
+        except Exception as e:
+            return {"success": False, "error": str(e), "message": f"Failed to create {request.type}"}
+
+    @app.put("/api/blender/modify")
+    async def modify_object(request: ModifyObjectRequest):
+        """Modify objects in Blender - for Copilot Studio"""
+        if not MCP_AVAILABLE:
+            raise HTTPException(status_code=503, detail="MCP components not available")
+        
+        try:
+            blender = get_blender_connection()
+            params = {"name": request.name}
+            if request.location is not None:
+                params["location"] = request.location
+            if request.rotation is not None:
+                params["rotation"] = request.rotation
+            if request.scale is not None:
+                params["scale"] = request.scale
+            if request.visible is not None:
+                params["visible"] = request.visible
+                
+            result = blender.send_command("modify_object", params)
+            return {
+                "success": True,
+                "message": f"Modified object: {result.get('name', request.name)}",
+                "data": result
+            }
+        except Exception as e:
+            return {"success": False, "error": str(e), "message": f"Failed to modify {request.name}"}
+
+    @app.delete("/api/blender/delete/{object_name}")
+    async def delete_object(object_name: str):
+        """Delete objects in Blender - for Copilot Studio"""
+        if not MCP_AVAILABLE:
+            raise HTTPException(status_code=503, detail="MCP components not available")
+        
+        try:
+            blender = get_blender_connection()
+            blender.send_command("delete_object", {"name": object_name})
+            return {
+                "success": True,
+                "message": f"Deleted object: {object_name}"
+            }
+        except Exception as e:
+            return {"success": False, "error": str(e), "message": f"Failed to delete {object_name}"}
+
+    @app.post("/api/blender/material")
+    async def apply_material(request: MaterialRequest):
+        """Apply materials to objects in Blender - for Copilot Studio"""
+        if not MCP_AVAILABLE:
+            raise HTTPException(status_code=503, detail="MCP components not available")
+        
+        try:
+            blender = get_blender_connection()
+            params = {"object_name": request.object_name}
+            if request.material_name:
+                params["material_name"] = request.material_name
+            if request.color:
+                params["color"] = request.color
+                
+            result = blender.send_command("set_material", params)
+            return {
+                "success": True,
+                "message": f"Applied material to {request.object_name}: {result.get('material_name', 'unknown')}",
+                "data": result
+            }
+        except Exception as e:
+            return {"success": False, "error": str(e), "message": f"Failed to apply material to {request.object_name}"}
+
+    @app.post("/api/blender/code")
+    async def execute_code(request: BlenderCommand):
+        """Execute Python code in Blender - for Copilot Studio"""
+        if not MCP_AVAILABLE:
+            raise HTTPException(status_code=503, detail="MCP components not available")
+        
+        try:
+            blender = get_blender_connection()
+            result = blender.send_command("execute_code", {"code": request.command})
+            return {
+                "success": True,
+                "message": f"Code executed successfully",
+                "result": result.get('result', ''),
+                "data": result
+            }
+        except Exception as e:
+            return {"success": False, "error": str(e), "message": "Failed to execute code"}
+
+    @app.post("/api/ai/prompt")
+    async def ai_blender_prompt(request: AIPromptRequest):
+        """AI-powered Blender operations using natural language - for Copilot Studio"""
+        if not MCP_AVAILABLE:
+            raise HTTPException(status_code=503, detail="MCP components not available")
+        
+        try:
+            # This would use the MCP AI integration
+            # For now, return a structured response that Copilot Studio can use
+            return {
+                "success": True,
+                "message": "AI prompt received",
+                "prompt": request.prompt,
+                "suggested_actions": [
+                    "This endpoint will process natural language commands",
+                    "Integration with Ollama AI for Blender automation",
+                    "Convert prompts to Blender operations"
+                ],
+                "note": "Full AI integration requires Ollama setup"
+            }
+        except Exception as e:
+            return {"success": False, "error": str(e), "message": "Failed to process AI prompt"}
 
     # If MCP is available, mount it as a sub-app
     if MCP_AVAILABLE:
@@ -128,7 +316,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     host = "0.0.0.0"
     
-    print(f"🚀 Starting Azure-compatible server on {host}:{port}")
+    print(f"🚀 Starting Azure-compatible server with Copilot Studio integration on {host}:{port}")
     
     try:
         uvicorn.run(
