@@ -89,7 +89,7 @@ try:
                     <li><strong>GET /api/blender/scene</strong> - Get scene information</li>
                     <li><strong>POST /api/blender/create</strong> - Create objects</li>
                     <li><strong>PUT /api/blender/modify</strong> - Modify objects</li>
-                    <li><strong>DELETE /api/blender/delete/{id}</strong> - Delete objects</li>
+                    <li><strong>DELETE /api/blender/delete/{objectId}</strong> - Delete objects</li>
                     <li><strong>POST /api/blender/remove</strong> - Remove objects (alternative)</li>
                     <li><strong>POST /api/blender/material</strong> - Apply materials</li>
                     <li><strong>POST /api/blender/code</strong> - Execute Blender code</li>
@@ -193,21 +193,21 @@ try:
         except Exception as e:
             return {"success": False, "error": str(e), "message": f"Failed to modify {request.name}"}
 
-    @app.delete("/api/blender/delete/{id}")
-    async def delete_object(id: str):
+    @app.delete("/api/blender/delete/{objectId}")
+    async def delete_object(objectId: str):
         """Delete objects in Blender - for Copilot Studio"""
         if not MCP_AVAILABLE:
             raise HTTPException(status_code=503, detail="MCP components not available")
         
         try:
             blender = get_blender_connection()
-            blender.send_command("delete_object", {"name": id})
+            blender.send_command("delete_object", {"name": objectId})
             return {
                 "success": True,
-                "message": f"Deleted object: {id}"
+                "message": f"Deleted object: {objectId}"
             }
         except Exception as e:
-            return {"success": False, "error": str(e), "message": f"Failed to delete {id}"}
+            return {"success": False, "error": str(e), "message": f"Failed to delete {objectId}"}
 
     @app.post("/api/blender/remove")
     async def remove_object(request: dict):
