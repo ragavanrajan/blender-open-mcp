@@ -66,33 +66,19 @@ try:
 
     @app.get("/", response_class=HTMLResponse)
     async def root():
-        if MCP_AVAILABLE:
-            status = "✅ BlenderMCP Server is running"
-            mcp_status = "Available"
-            try:
-                ollama_info = f'<p><strong>Ollama URL:</strong> {_ollama_url}</p><p><strong>Ollama Model:</strong> {_ollama_model}</p>'
-            except:
-                ollama_info = '<p><strong>Ollama:</strong> Configuration not available</p>'
-        else:
-            status = "⚠️ BlenderMCP Server started but MCP components not available"
-            mcp_status = "Not Available"
-            ollama_info = ""
-            
-        return f"""
+        return """
         <html>
             <head><title>BlenderMCP Server</title></head>
             <body>
-                <h1>{status}</h1>
-                <p><strong>Status:</strong> Server is running</p>
-                <p><strong>MCP Components:</strong> {mcp_status}</p>
-                <p><strong>Python Version:</strong> {sys.version}</p>
-                <p><strong>Platform:</strong> {sys.platform}</p>
-                {ollama_info}
+                <h1>🚀 BlenderMCP Server is Running</h1>
+                <p><strong>Status:</strong> Server is operational</p>
+                <p><strong>Version:</strong> 1.0.0</p>
                 <hr>
                 <h2>🤖 Copilot Studio Integration Ready!</h2>
                 <h3>Available API Endpoints:</h3>
                 <ul>
                     <li><strong>GET /health</strong> - Health check</li>
+                    <li><strong>GET /info</strong> - Server information</li>
                     <li><strong>GET /api/blender/scene</strong> - Get scene information</li>
                     <li><strong>POST /api/blender/create</strong> - Create objects</li>
                     <li><strong>PUT /api/blender/modify</strong> - Modify objects</li>
@@ -102,7 +88,14 @@ try:
                     <li><strong>POST /api/blender/code</strong> - Execute Blender code</li>
                     <li><strong>POST /api/ai/prompt</strong> - AI-powered Blender operations</li>
                 </ul>
-                <p><a href="/docs">📖 View API Documentation</a></p>
+                <h3>📖 Documentation:</h3>
+                <ul>
+                    <li><a href="/docs">OpenAPI Documentation (Swagger UI)</a></li>
+                    <li><a href="/health">Health Check</a></li>
+                    <li><a href="/info">Server Information</a></li>
+                </ul>
+                <hr>
+                <p><em>For Copilot Studio integration, use the Swagger 2.0 specification provided.</em></p>
             </body>
         </html>
         """
