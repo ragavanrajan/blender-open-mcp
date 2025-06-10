@@ -192,21 +192,21 @@ try:
         except Exception as e:
             return {"success": False, "error": str(e), "message": f"Failed to modify {request.name}"}
 
-    @app.delete("/api/blender/delete/{object_name}")
-    async def delete_object(object_name: str):
+    @app.delete("/api/blender/delete/{objectName}")
+    async def delete_object(objectName: str):
         """Delete objects in Blender - for Copilot Studio"""
         if not MCP_AVAILABLE:
             raise HTTPException(status_code=503, detail="MCP components not available")
         
         try:
             blender = get_blender_connection()
-            blender.send_command("delete_object", {"name": object_name})
+            blender.send_command("delete_object", {"name": objectName})
             return {
                 "success": True,
-                "message": f"Deleted object: {object_name}"
+                "message": f"Deleted object: {objectName}"
             }
         except Exception as e:
-            return {"success": False, "error": str(e), "message": f"Failed to delete {object_name}"}
+            return {"success": False, "error": str(e), "message": f"Failed to delete {objectName}"}
 
     @app.post("/api/blender/material")
     async def apply_material(request: MaterialRequest):
