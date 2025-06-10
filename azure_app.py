@@ -20,11 +20,24 @@ try:
     
     # Try to import MCP components
     try:
-        from blender_open_mcp.server import mcp, _ollama_url, _ollama_model, get_blender_connection
+        from blender_open_mcp.server import BlenderConnection, _ollama_url, _ollama_model
+        # Don't import get_blender_connection here - we'll create it when needed
         MCP_AVAILABLE = True
+        print("✅ MCP components imported successfully")
     except Exception as e:
         print(f"⚠️ MCP not available: {e}")
         MCP_AVAILABLE = False
+        # Create a mock BlenderConnection for when MCP is not available
+        class BlenderConnection:
+            def __init__(self, host="localhost", port=8275):
+                self.host = host
+                self.port = port
+            
+            def send_command(self, command_type, params=None):
+                raise Exception("Blender connection not available - MCP components not loaded")
+        
+        _ollama_url = "http://localhost:11434"
+        _ollama_model = "llama3.2"
 
     # Create FastAPI app
     app = FastAPI(
@@ -126,7 +139,7 @@ try:
             raise HTTPException(status_code=503, detail="MCP components not available")
         
         try:
-            blender = get_blender_connection()
+            blender = BlenderConnection()
             result = blender.send_command("get_scene_info")
             return {"success": True, "data": result}
         except Exception as e:
@@ -139,7 +152,7 @@ try:
             raise HTTPException(status_code=503, detail="MCP components not available")
         
         try:
-            blender = get_blender_connection()
+            blender = BlenderConnection()
             params = {
                 "type": request.type,
                 "location": request.location,
@@ -165,7 +178,7 @@ try:
             raise HTTPException(status_code=503, detail="MCP components not available")
         
         try:
-            blender = get_blender_connection()
+            blender = BlenderConnection()
             params = {"name": request.name}
             if request.location is not None:
                 params["location"] = request.location
@@ -192,7 +205,7 @@ try:
             raise HTTPException(status_code=503, detail="MCP components not available")
         
         try:
-            blender = get_blender_connection()
+            blender = BlenderConnection()
             blender.send_command("delete_object", {"name": objectId})
             return {
                 "success": True,
@@ -208,7 +221,7 @@ try:
             raise HTTPException(status_code=503, detail="MCP components not available")
         
         try:
-            blender = get_blender_connection()
+            blender = BlenderConnection()
             blender.send_command("delete_object", {"name": request.object_name})
             return {
                 "success": True,
@@ -224,7 +237,7 @@ try:
             raise HTTPException(status_code=503, detail="MCP components not available")
         
         try:
-            blender = get_blender_connection()
+            blender = BlenderConnection()
             params = {"object_name": request.object_name}
             if request.material_name:
                 params["material_name"] = request.material_name
@@ -247,7 +260,7 @@ try:
             raise HTTPException(status_code=503, detail="MCP components not available")
         
         try:
-            blender = get_blender_connection()
+            blender = BlenderConnection()
             result = blender.send_command("execute_code", {"code": request.command})
             return {
                 "success": True,
