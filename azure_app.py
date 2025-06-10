@@ -64,41 +64,27 @@ try:
     class RemoveObjectRequest(BaseModel):
         object_name: str
 
-    @app.get("/", response_class=HTMLResponse)
+    @app.get("/")
     async def root():
-        return """
-        <html>
-            <head><title>BlenderMCP Server</title></head>
-            <body>
-                <h1>🚀 BlenderMCP Server is Running</h1>
-                <p><strong>Status:</strong> Server is operational</p>
-                <p><strong>Version:</strong> 1.0.0</p>
-                <hr>
-                <h2>🤖 Copilot Studio Integration Ready!</h2>
-                <h3>Available API Endpoints:</h3>
-                <ul>
-                    <li><strong>GET /health</strong> - Health check</li>
-                    <li><strong>GET /info</strong> - Server information</li>
-                    <li><strong>GET /api/blender/scene</strong> - Get scene information</li>
-                    <li><strong>POST /api/blender/create</strong> - Create objects</li>
-                    <li><strong>PUT /api/blender/modify</strong> - Modify objects</li>
-                    <li><strong>DELETE /api/blender/delete/{objectId}</strong> - Delete objects</li>
-                    <li><strong>POST /api/blender/remove</strong> - Remove objects (alternative)</li>
-                    <li><strong>POST /api/blender/material</strong> - Apply materials</li>
-                    <li><strong>POST /api/blender/code</strong> - Execute Blender code</li>
-                    <li><strong>POST /api/ai/prompt</strong> - AI-powered Blender operations</li>
-                </ul>
-                <h3>📖 Documentation:</h3>
-                <ul>
-                    <li><a href="/docs">OpenAPI Documentation (Swagger UI)</a></li>
-                    <li><a href="/health">Health Check</a></li>
-                    <li><a href="/info">Server Information</a></li>
-                </ul>
-                <hr>
-                <p><em>For Copilot Studio integration, use the Swagger 2.0 specification provided.</em></p>
-            </body>
-        </html>
-        """
+        return {
+            "message": "BlenderMCP Server is Running",
+            "status": "operational",
+            "version": "1.0.0",
+            "endpoints": {
+                "health": "/health",
+                "info": "/info",
+                "docs": "/docs",
+                "scene": "/api/blender/scene",
+                "create": "/api/blender/create",
+                "modify": "/api/blender/modify",
+                "delete": "/api/blender/delete/{objectId}",
+                "remove": "/api/blender/remove",
+                "material": "/api/blender/material",
+                "code": "/api/blender/code",
+                "ai_prompt": "/api/ai/prompt"
+            },
+            "copilot_studio_ready": True
+        }
 
     @app.get("/health")
     async def health_check():
