@@ -69,9 +69,14 @@ try:
         if MCP_AVAILABLE:
             status = "✅ BlenderMCP Server is running"
             mcp_status = "Available"
+            try:
+                ollama_info = f'<p><strong>Ollama URL:</strong> {_ollama_url}</p><p><strong>Ollama Model:</strong> {_ollama_model}</p>'
+            except:
+                ollama_info = '<p><strong>Ollama:</strong> Configuration not available</p>'
         else:
             status = "⚠️ BlenderMCP Server started but MCP components not available"
             mcp_status = "Not Available"
+            ollama_info = ""
             
         return f"""
         <html>
@@ -82,8 +87,7 @@ try:
                 <p><strong>MCP Components:</strong> {mcp_status}</p>
                 <p><strong>Python Version:</strong> {sys.version}</p>
                 <p><strong>Platform:</strong> {sys.platform}</p>
-                {f'<p><strong>Ollama URL:</strong> {_ollama_url}</p>' if MCP_AVAILABLE else ''}
-                {f'<p><strong>Ollama Model:</strong> {_ollama_model}</p>' if MCP_AVAILABLE else ''}
+                {ollama_info}
                 <hr>
                 <h2>🤖 Copilot Studio Integration Ready!</h2>
                 <h3>Available API Endpoints:</h3>
@@ -122,10 +126,16 @@ try:
         }
         
         if MCP_AVAILABLE:
-            info.update({
-                "ollama_url": _ollama_url,
-                "ollama_model": _ollama_model,
-            })
+            try:
+                info.update({
+                    "ollama_url": _ollama_url,
+                    "ollama_model": _ollama_model,
+                })
+            except:
+                info.update({
+                    "ollama_url": "not available",
+                    "ollama_model": "not available",
+                })
         
         return info
 
