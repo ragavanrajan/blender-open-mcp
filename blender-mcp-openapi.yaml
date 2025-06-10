@@ -167,21 +167,55 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /api/blender/delete/{objectName}:
+  /api/blender/delete/{id}:
     delete:
       summary: Delete Object
       description: Delete an object from the Blender scene
       operationId: DeleteObject
       parameters:
-        - name: objectName
+        - name: id
           in: path
           required: true
-          description: Name of the object to delete
+          description: Object identifier
           schema:
             type: string
+            minLength: 1
+            maxLength: 100
+            example: "Cube"
       responses:
         '200':
           description: Object deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIResponse'
+        '404':
+          description: Object not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/blender/remove:
+    post:
+      summary: Remove Object (Alternative)
+      description: Remove an object from the Blender scene using POST
+      operationId: RemoveObject
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [object_name]
+              properties:
+                object_name:
+                  type: string
+                  description: Name of object to remove
+                  example: "Cube"
+      responses:
+        '200':
+          description: Object removed successfully
           content:
             application/json:
               schema:
