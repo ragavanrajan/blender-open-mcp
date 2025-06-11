@@ -2,14 +2,15 @@
 
 ## 📋 **Table of Contents**
 1. [Overview](#overview)
-2. [Architecture](#architecture) 
-3. [Prerequisites](#prerequisites)
-4. [Installation & Setup](#installation--setup)
-5. [Domain & Tunnel Management](#domain--tunnel-management)
-6. [Copilot Studio Configuration](#copilot-studio-configuration)
-7. [Usage Examples](#usage-examples)
-8. [Troubleshooting](#troubleshooting)
-9. [Advanced Features](#advanced-features)
+2. [Python Version Compatibility](#python-version-compatibility)
+3. [Architecture](#architecture) 
+4. [Prerequisites](#prerequisites)
+5. [Installation & Setup](#installation--setup)
+6. [Domain & Tunnel Management](#domain--tunnel-management)
+7. [Copilot Studio Configuration](#copilot-studio-configuration)
+8. [Usage Examples](#usage-examples)
+9. [Troubleshooting](#troubleshooting)
+10. [Advanced Features](#advanced-features)
 
 ---
 
@@ -23,6 +24,63 @@ This guide sets up a complete integration between:
 - **Microsoft Copilot Studio** (cloud agent platform)
 
 **End Result:** Control your local Blender installation using natural language through a Copilot Studio agent with AI-powered commands.
+
+---
+
+## 🐍 **Python Version Compatibility**
+
+This project supports two modes depending on your Python version:
+
+### **Python 3.8-3.9 (Simple Mode)**
+- ✅ **Works out of the box** - No external dependencies required
+- ✅ **Basic HTTP server** - Full Blender integration
+- ✅ **All core features** - Object creation, modification, materials
+- ⚠️ **Limited MCP features** - Uses simplified server implementation
+
+### **Python 3.10+ (Full MCP Mode)**
+- ✅ **Complete MCP protocol** - Full Model Context Protocol support
+- ✅ **Advanced features** - FastMCP server with all capabilities
+- ✅ **Better performance** - Optimized for production use
+- ⚠️ **Requires upgrade** - Need to install Python 3.10+
+
+**Current Detection:** The project automatically detects your Python version and uses the appropriate mode.
+
+### **🚀 Quick Start (TL;DR)**
+
+#### **For Python 3.10+ Users (Full MCP Features):**
+```bash
+# 1. Clone and enter directory
+git clone https://github.com/dhakalnirajan/blender-open-mcp.git
+cd blender-open-mcp
+
+# 2. Install full MCP dependencies
+pip install fastmcp httpx
+
+# 3. Start the full MCP server (auto-detected)
+python main.py
+
+# 4. Verify everything works
+python verify_python_upgrade.py
+
+# 5. Install Blender addon and you're ready!
+```
+
+#### **For Python 3.8-3.9 Users (Simple Mode):**
+```bash
+# 1. Clone and enter directory  
+git clone https://github.com/dhakalnirajan/blender-open-mcp.git
+cd blender-open-mcp
+
+# 2. Start the simple server (no dependencies needed)
+python main.py
+
+# 3. Test it works
+python test_simple_server.py
+
+# 4. Install Blender addon and you're ready!
+```
+
+**Auto-Detection:** The `main.py` script automatically detects your Python version and uses the appropriate server mode!
 
 ---
 
@@ -57,8 +115,10 @@ This guide sets up a complete integration between:
 
 ### **Software Requirements:**
 - **Blender 3.0+** - Downloaded from [blender.org](https://blender.org)
-- **Ollama** - Installed from [ollama.com](https://ollama.com)
+- **Ollama** - Installed from [ollama.com](https://ollama.com) *(Optional for AI features)*
 - **Python 3.8+** - System installation
+  - **Python 3.8-3.9:** Simple mode (no extra dependencies)
+  - **Python 3.10+:** Full MCP mode (requires fastmcp package)
 - **Git** - For repository cloning
 
 ### **Accounts Required:**
@@ -76,8 +136,24 @@ cd blender-open-mcp
 ```
 
 ### **Step 2: Install Dependencies**
+
+#### **For Python 3.8-3.9 (Simple Mode)**
 ```bash
-pip install fastapi uvicorn httpx
+# No dependencies required! Uses Python standard library only
+python --version  # Should show 3.8 or 3.9
+```
+
+#### **For Python 3.10+ (Full MCP Mode)**
+```bash
+# Install full MCP dependencies
+pip install fastmcp
+pip install -r requirements.txt
+```
+
+#### **Optional AI Dependencies (All Python versions)**
+```bash
+# Only needed if you want AI features
+pip install httpx  # For Ollama integration
 ```
 
 ### **Step 3: Install Blender Addon**
@@ -97,9 +173,48 @@ ollama pull llama3.2
 curl http://localhost:11434/api/tags
 ```
 
-### **Step 5: Start Enhanced Server**
+### **Step 5: Start the Server**
+
+#### **Auto-Detected Start (Recommended)**
 ```bash
-python enhanced_server.py
+# Automatically detects Python version and uses the best available server
+python main.py
+
+# Check what server mode is being used
+python verify_python_upgrade.py
+```
+
+#### **Manual Server Selection**
+
+**Simple Server (Python 3.8+):**
+```bash
+python src/blender_open_mcp/simple_server.py
+```
+
+**Full MCP Server (Python 3.10+ with fastmcp installed):**
+```bash
+python src/blender_open_mcp/server.py
+```
+
+#### **Server Options**
+```bash
+# Custom port and host
+python main.py --port 8080 --host 0.0.0.0
+
+# Get help
+python main.py --help
+```
+
+#### **Verify Server is Running**
+```bash
+# Check server mode and test functionality
+python verify_python_upgrade.py
+
+# Test simple server (if in simple mode)
+python test_simple_server.py
+
+# Test manually (works for both modes)
+curl -X POST http://localhost:8000/ -H "Content-Type: application/json" -d '{"command": "health_check"}'
 ```
 
 ### **Step 6: Create Public Tunnel**
@@ -125,9 +240,10 @@ Invoke-WebRequest -Uri "https://github.com/cloudflare/cloudflared/releases/lates
 
 #### **Option 1: Cloudflare Named Tunnel (Recommended)**
 
-1. **Create Cloudflare Account**
-   - Sign up at [cloudflare.com](https://cloudflare.com)
-   - Add a domain (you can register one for $10-15/year)
+1. **Setup Your Domain**
+   - Your domain: `BLENDER-OPEN-MCP-DE.COM`
+   - Ensure domain is added to your Cloudflare account
+   - Domain DNS should be managed by Cloudflare
 
 2. **Setup Named Tunnel**
    ```bash
@@ -137,15 +253,15 @@ Invoke-WebRequest -Uri "https://github.com/cloudflare/cloudflared/releases/lates
    # Create named tunnel
    .\cloudflared.exe tunnel create blender-mcp
    
-   # Configure tunnel
-   .\cloudflared.exe tunnel route dns blender-mcp api.yourdomain.com
+   # Configure tunnel to route to your root domain
+   .\cloudflared.exe tunnel route dns blender-mcp blender-open-mcp-de.com
    
-   # Run with custom domain
+   # Run with your custom domain
    .\cloudflared.exe tunnel run blender-mcp
    ```
 
-3. **Benefits:**
-   - ✅ **Your domain:** `api.yourdomain.com`
+3. **Your Setup Benefits:**
+   - ✅ **Your domain:** `blender-open-mcp-de.com`
    - ✅ **Permanent:** Never changes
    - ✅ **Controlled:** Only you can manage it
    - ✅ **SSL Certificate:** Automatic HTTPS
@@ -180,8 +296,8 @@ Invoke-WebRequest -Uri "https://github.com/cloudflare/cloudflared/releases/lates
 
 2. **Configure Connection**
    ```
-   OpenAPI URL: https://chicken-key-exclude-skating.trycloudflare.com/openapi.json
-   Host: chicken-key-exclude-skating.trycloudflare.com
+   OpenAPI URL: https://blender-open-mcp-de.com/openapi.json
+   Host: blender-open-mcp-de.com
    Base URL: /
    Authentication: None
    ```
@@ -278,8 +394,8 @@ Invoke-WebRequest -Uri "https://github.com/cloudflare/cloudflared/releases/lates
 
 #### **503 Service Unavailable**
 - ✅ **Check Blender:** Ensure MCP addon is running
-- ✅ **Verify Port:** Blender should listen on 9876
-- ✅ **Restart Server:** Stop and restart enhanced_server.py
+- ✅ **Verify Port:** Blender should listen on 9999 (default) or 9876
+- ✅ **Restart Server:** Stop and restart with `python main.py`
 
 #### **AI Not Responding**
 - ✅ **Check Ollama:** Ensure service is running on 11434
@@ -295,16 +411,60 @@ Invoke-WebRequest -Uri "https://github.com/cloudflare/cloudflared/releases/lates
 
 ```bash
 # Check if all services are running
-netstat -an | findstr "8000 9876 11434"
+netstat -an | findstr "8000 9999 11434"
 
 # Test local endpoints
-curl http://localhost:8000/health
-curl http://localhost:9876
-curl http://localhost:11434/api/tags
+curl -X POST http://localhost:8000/ -H "Content-Type: application/json" -d "{\"command\": \"health_check\"}"
+curl http://localhost:11434/api/tags  # Only if Ollama is installed
 
-# Check enhanced server status
-python check_status.py
+# Test server with Python
+python test_simple_server.py
+
+# Check server status
+python check_status.py  # If available
 ```
+
+---
+
+## 🎯 **Full MCP Mode Features (Python 3.10+)**
+
+### **Enhanced Capabilities with FastMCP**
+
+When running Python 3.10+ with FastMCP installed, you get additional features:
+
+✅ **Complete MCP Protocol Support**
+- Full Model Context Protocol compliance
+- Advanced client-server communication
+- Better error handling and logging
+
+✅ **Enhanced Performance**
+- Optimized server architecture  
+- Better concurrency handling
+- Improved resource management
+
+✅ **Advanced Tool Features**
+- Rich context passing
+- Image handling capabilities
+- Streaming responses
+- Progress reporting
+
+✅ **Production Ready**
+- ASGI app support for deployment
+- Better scaling capabilities
+- Advanced authentication options
+
+### **Feature Comparison**
+
+| Feature | Simple Mode (3.8+) | Full MCP Mode (3.10+) |
+|---------|---------------------|------------------------|
+| Basic Blender Control | ✅ | ✅ |
+| HTTP API | ✅ | ✅ |
+| Ollama Integration | ✅ | ✅ |
+| MCP Protocol | ❌ | ✅ |
+| Advanced Tools | ❌ | ✅ |
+| Image Support | ❌ | ✅ |
+| Production Deploy | Basic | Advanced |
+| Performance | Good | Excellent |
 
 ---
 
@@ -365,12 +525,14 @@ async def custom_operation(request: CustomRequest):
 ## 📊 **Current Setup Status**
 
 ```
-✅ Blender MCP Addon: Running (port 9876)
-✅ Ollama AI Server: Running (port 11434) with llama3.2
-✅ Enhanced Server: Running (port 8000)
-✅ Cloudflare Tunnel: Active
-✅ Public URL: https://chicken-key-exclude-skating.trycloudflare.com
-✅ AI Integration: Functional
+✅ Python Version: 3.11+ (Full MCP Mode) / 3.8+ (Simple Mode)
+✅ FastMCP Package: Installed (for Python 3.10+)
+✅ Blender MCP Addon: Running (port 9999)
+✅ MCP Server: Running (port 8000) - Auto-detected mode
+✅ Ollama AI Server: Optional (port 11434) with llama3.2
+✅ Cloudflare Tunnel: Optional - for external access
+✅ Public URL: Available when tunnel is active
+✅ Full Integration: Functional with all MCP features
 ✅ Copilot Studio: Ready for connection
 ```
 
@@ -397,5 +559,5 @@ async def custom_operation(request: CustomRequest):
 
 **🎉 Congratulations! You now have a complete AI-powered Blender control system through Copilot Studio! 🎨🤖**
 
-*Last Updated: June 10, 2025*
-*Version: 2.0 Enhanced* 
+*Last Updated: June 11, 2025*
+*Version: 2.2 - Auto-Detecting Python 3.8-3.11+ Compatible* 

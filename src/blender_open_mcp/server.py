@@ -565,10 +565,16 @@ def main():
     _ollama_model = args.ollama_model
 
     # MCP instance is already created globally
-    mcp.run(host=args.host, port=args.port)
+    # Note: FastMCP 2.7+ run() method doesn't accept any parameters at all
+    mcp.run()
 
 # Expose the FastMCP instance as an ASGI app for Azure Web App deployment
-app = mcp.app
+# Note: In newer FastMCP versions, app access may be different
+try:
+    app = mcp.app
+except AttributeError:
+    # Fallback for newer FastMCP versions
+    app = mcp
 
 if __name__ == "__main__":
     main()
