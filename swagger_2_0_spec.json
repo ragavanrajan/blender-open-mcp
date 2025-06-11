@@ -1,0 +1,375 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Enhanced Blender MCP Server",
+    "description": "Direct Blender connection with Ollama AI integration for Copilot Studio",
+    "version": "2.0.0"
+  },
+  "host": "rejected-stores-cover-kinds.trycloudflare.com",
+  "schemes": ["https"],
+  "consumes": ["application/json"],
+  "produces": ["application/json"],
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health Check",
+        "description": "Enhanced health check with AI status",
+        "operationId": "health_check",
+        "responses": {
+          "200": {
+            "description": "Health status",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {"type": "string"},
+                "blender_connected": {"type": "boolean"},
+                "ai_available": {"type": "boolean"},
+                "ollama_model": {"type": "string"}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/blender/scene": {
+      "get": {
+        "summary": "Get Scene Info",
+        "description": "Get current Blender scene information",
+        "operationId": "get_scene_info",
+        "responses": {
+          "200": {
+            "description": "Scene information",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {"type": "boolean"},
+                "data": {"type": "object"}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/blender/create": {
+      "post": {
+        "summary": "Create Object",
+        "description": "Create objects in Blender",
+        "operationId": "create_object",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/CreateObjectRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Object created successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {"type": "boolean"},
+                "message": {"type": "string"},
+                "data": {"type": "object"}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/blender/modify": {
+      "put": {
+        "summary": "Modify Object",
+        "description": "Modify objects in Blender",
+        "operationId": "modify_object",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ModifyObjectRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Object modified successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {"type": "boolean"},
+                "message": {"type": "string"},
+                "data": {"type": "object"}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/blender/delete/{objectId}": {
+      "delete": {
+        "summary": "Delete Object",
+        "description": "Delete objects in Blender",
+        "operationId": "delete_object",
+        "parameters": [
+          {
+            "name": "objectId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Object deleted successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {"type": "boolean"},
+                "message": {"type": "string"}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/blender/material": {
+      "post": {
+        "summary": "Apply Material",
+        "description": "Apply materials to objects in Blender",
+        "operationId": "apply_material",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/MaterialRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Material applied successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {"type": "boolean"},
+                "message": {"type": "string"},
+                "data": {"type": "object"}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/blender/code": {
+      "post": {
+        "summary": "Execute Code",
+        "description": "Execute Python code in Blender",
+        "operationId": "execute_code",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/BlenderCommand"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Code executed successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {"type": "boolean"},
+                "message": {"type": "string"},
+                "result": {"type": "string"},
+                "data": {"type": "object"}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/prompt": {
+      "post": {
+        "summary": "AI General Prompt",
+        "description": "General AI prompt endpoint",
+        "operationId": "ai_general_prompt",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/AIPromptRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "AI response",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {"type": "boolean"},
+                "prompt": {"type": "string"},
+                "response": {"type": "string"},
+                "model": {"type": "string"}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/command": {
+      "post": {
+        "summary": "AI to Blender Command",
+        "description": "AI-powered natural language to Blender command conversion",
+        "operationId": "ai_to_blender_command",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/AIPromptRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "AI command executed",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {"type": "boolean"},
+                "user_prompt": {"type": "string"},
+                "ai_interpretation": {"type": "string"},
+                "action": {"type": "string"},
+                "blender_result": {"type": "object"}
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "CreateObjectRequest": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "default": "cube",
+          "description": "Type of object to create (cube, sphere, cylinder, etc.)"
+        },
+        "name": {
+          "type": "string",
+          "description": "Optional name for the object"
+        },
+        "location": {
+          "type": "array",
+          "items": {"type": "number"},
+          "default": [0, 0, 0],
+          "description": "X, Y, Z coordinates"
+        },
+        "rotation": {
+          "type": "array", 
+          "items": {"type": "number"},
+          "default": [0, 0, 0],
+          "description": "X, Y, Z rotation in radians"
+        },
+        "scale": {
+          "type": "array",
+          "items": {"type": "number"},
+          "default": [1, 1, 1],
+          "description": "X, Y, Z scale factors"
+        }
+      }
+    },
+    "ModifyObjectRequest": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name of object to modify"
+        },
+        "location": {
+          "type": "array",
+          "items": {"type": "number"},
+          "description": "New X, Y, Z coordinates"
+        },
+        "rotation": {
+          "type": "array",
+          "items": {"type": "number"},
+          "description": "New X, Y, Z rotation"
+        },
+        "scale": {
+          "type": "array",
+          "items": {"type": "number"},
+          "description": "New X, Y, Z scale"
+        },
+        "visible": {
+          "type": "boolean",
+          "description": "Object visibility"
+        }
+      }
+    },
+    "MaterialRequest": {
+      "type": "object",
+      "required": ["object_name"],
+      "properties": {
+        "object_name": {
+          "type": "string",
+          "description": "Name of object to apply material to"
+        },
+        "material_name": {
+          "type": "string",
+          "description": "Name of material to apply"
+        },
+        "color": {
+          "type": "array",
+          "items": {"type": "number"},
+          "description": "RGB color values (0-1)"
+        }
+      }
+    },
+    "BlenderCommand": {
+      "type": "object",
+      "required": ["command"],
+      "properties": {
+        "command": {
+          "type": "string",
+          "description": "Python code to execute in Blender"
+        },
+        "description": {
+          "type": "string",
+          "description": "Optional description of the command"
+        }
+      }
+    },
+    "AIPromptRequest": {
+      "type": "object",
+      "required": ["prompt"],
+      "properties": {
+        "prompt": {
+          "type": "string",
+          "description": "Natural language prompt for AI"
+        },
+        "context": {
+          "type": "string",
+          "description": "Optional context for the prompt"
+        }
+      }
+    }
+  }
+} 

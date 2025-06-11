@@ -1,0 +1,375 @@
+swagger: "2.0"
+info:
+  title: Blender MCP API
+  description: AI-powered Blender automation through Model Context Protocol
+  version: "1.0.0"
+host: rejected-stores-cover-kinds.trycloudflare.com
+schemes:
+  - https
+basePath: /
+consumes:
+  - application/json
+produces:
+  - application/json
+
+paths:
+  /health:
+    get:
+      summary: Health Check
+      description: Check if the server is running and Blender is connected
+      operationId: GetHealth
+      responses:
+        "200":
+          description: Server status
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+                example: "ok"
+              blender_connected:
+                type: boolean
+                example: true
+              message:
+                type: string
+                example: "Server running, Blender connected"
+
+  /api/blender/scene:
+    get:
+      summary: Get Scene Information
+      description: Retrieve current Blender scene details
+      operationId: GetSceneInfo
+      responses:
+        "200":
+          description: Scene information
+          schema:
+            $ref: "#/definitions/APIResponse"
+        "500":
+          description: Server error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+
+  /api/blender/create:
+    post:
+      summary: Create Object
+      description: Create a new 3D object in Blender
+      operationId: CreateObject
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            required:
+              - type
+              - name
+            properties:
+              type:
+                type: string
+                enum: [CUBE, SPHERE, CYLINDER, PLANE, CONE, TORUS, MONKEY]
+                description: Type of object to create
+                example: "CUBE"
+              name:
+                type: string
+                description: Name for the new object
+                example: "MyCube"
+              location:
+                type: array
+                items:
+                  type: number
+                minItems: 3
+                maxItems: 3
+                default: [0, 0, 0]
+                description: 3D position [X, Y, Z]
+                example: [1.0, 2.0, 0.5]
+              rotation:
+                type: array
+                items:
+                  type: number
+                minItems: 3
+                maxItems: 3
+                default: [0, 0, 0]
+                description: 3D rotation [RX, RY, RZ] in radians
+                example: [0, 0, 1.57]
+              scale:
+                type: array
+                items:
+                  type: number
+                minItems: 3
+                maxItems: 3
+                default: [1, 1, 1]
+                description: 3D scale [SX, SY, SZ]
+                example: [2.0, 1.0, 1.0]
+      responses:
+        "200":
+          description: Object created successfully
+          schema:
+            $ref: "#/definitions/APIResponse"
+        "400":
+          description: Bad request
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+
+  /api/blender/modify:
+    put:
+      summary: Modify Object
+      description: Modify an existing object's properties
+      operationId: ModifyObject
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            required:
+              - name
+            properties:
+              name:
+                type: string
+                description: Name of object to modify
+                example: "Cube"
+              location:
+                type: array
+                items:
+                  type: number
+                minItems: 3
+                maxItems: 3
+                description: New 3D position [X, Y, Z]
+                example: [5.0, 0.0, 2.0]
+              rotation:
+                type: array
+                items:
+                  type: number
+                minItems: 3
+                maxItems: 3
+                description: New 3D rotation [RX, RY, RZ] in radians
+                example: [0, 0, 3.14]
+              scale:
+                type: array
+                items:
+                  type: number
+                minItems: 3
+                maxItems: 3
+                description: New 3D scale [SX, SY, SZ]
+                example: [1.5, 1.5, 1.5]
+      responses:
+        "200":
+          description: Object modified successfully
+          schema:
+            $ref: "#/definitions/APIResponse"
+        "404":
+          description: Object not found
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+
+  /api/blender/delete/{objectId}:
+    delete:
+      summary: Delete Object
+      description: Delete an object from the Blender scene
+      operationId: DeleteObject
+      parameters:
+        - name: objectId
+          in: path
+          required: true
+          type: string
+          description: Name of object to delete
+          x-example: "Cube"
+      responses:
+        "200":
+          description: Object deleted successfully
+          schema:
+            $ref: "#/definitions/APIResponse"
+        "404":
+          description: Object not found
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+
+  /api/blender/remove:
+    post:
+      summary: Remove Object
+      description: Remove an object from the Blender scene
+      operationId: RemoveObject
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            required:
+              - object_name
+            properties:
+              object_name:
+                type: string
+                description: Name of object to remove
+                example: "Cube"
+      responses:
+        "200":
+          description: Object removed successfully
+          schema:
+            $ref: "#/definitions/APIResponse"
+        "404":
+          description: Object not found
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+
+  /api/blender/material:
+    post:
+      summary: Apply Material
+      description: Apply material and color to an object
+      operationId: ApplyMaterial
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            required:
+              - object_name
+              - material_name
+            properties:
+              object_name:
+                type: string
+                description: Name of target object
+                example: "Cube"
+              material_name:
+                type: string
+                description: Name of material to apply
+                example: "Gold"
+              color:
+                type: array
+                items:
+                  type: number
+                  minimum: 0
+                  maximum: 1
+                minItems: 3
+                maxItems: 3
+                default: [0.5, 0.5, 0.5]
+                description: RGB color values [R, G, B] from 0.0 to 1.0
+                example: [1.0, 0.8, 0.0]
+      responses:
+        "200":
+          description: Material applied successfully
+          schema:
+            $ref: "#/definitions/APIResponse"
+        "404":
+          description: Object not found
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+
+  /api/blender/code:
+    post:
+      summary: Execute Python Code
+      description: Execute custom Python code in Blender
+      operationId: ExecuteCode
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            required:
+              - command
+            properties:
+              command:
+                type: string
+                description: Python code to execute
+                example: "bpy.ops.mesh.primitive_cube_add(location=(0, 0, 2))"
+              description:
+                type: string
+                description: Description of what the code does
+                example: "Add a cube at height 2"
+      responses:
+        "200":
+          description: Code executed successfully
+          schema:
+            $ref: "#/definitions/APIResponse"
+        "400":
+          description: Invalid Python code
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+
+  /api/ai/prompt:
+    post:
+      summary: AI-Powered Operation
+      description: Execute operations using natural language through AI
+      operationId: AiPrompt
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            required:
+              - prompt
+            properties:
+              prompt:
+                type: string
+                description: Natural language description of what to do
+                example: "Create a red sphere and move it above the default cube"
+              context:
+                type: string
+                description: Additional context or constraints
+                example: "Make it suitable for a product render"
+      responses:
+        "200":
+          description: AI operation completed
+          schema:
+            $ref: "#/definitions/AIResponse"
+        "400":
+          description: Invalid prompt
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+
+definitions:
+  APIResponse:
+    type: object
+    properties:
+      success:
+        type: boolean
+        description: Whether the operation succeeded
+        example: true
+      message:
+        type: string
+        description: Success or error message
+        example: "Object created successfully"
+      data:
+        type: object
+        description: Additional response data
+
+  AIResponse:
+    type: object
+    properties:
+      success:
+        type: boolean
+        example: true
+      message:
+        type: string
+        example: "AI operation completed successfully"
+      analysis:
+        type: string
+        description: AI analysis of the request
+        example: "User wants to create a red sphere positioned above the default cube"
+      actions_taken:
+        type: array
+        items:
+          type: string
+        description: List of actions performed
+        example: ["Created sphere", "Applied red material", "Positioned at (0, 0, 2)"]
+      result:
+        type: object
+        description: Operation results
+
+  ErrorResponse:
+    type: object
+    properties:
+      success:
+        type: boolean
+        example: false
+      message:
+        type: string
+        description: Error message
+        example: "Object not found in scene"
+      error_code:
+        type: string
+        description: Specific error code
+        example: "OBJECT_NOT_FOUND" 
