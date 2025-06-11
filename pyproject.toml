@@ -1,26 +1,51 @@
 [project]
 name = "blender-open-mcp"
-version = "0.2.0"
-description = "Blender integration with local AI models via MCP and Ollama"
+version = "2.0.0"
+description = "Blender integration with local AI models via MCP - Python 3.8+ compatible with auto-detection"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.8"
 authors = [
-    {name = "Nirajan Dhakal"}
+    {name = "Nirajan Dhakal"},
+    {name = "Community Contributors"}
 ]
 license = {text = "MIT"}
+keywords = ["blender", "mcp", "ai", "3d", "modeling", "ollama", "automation"]
 classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: End Users/Desktop",
+    "Topic :: Multimedia :: Graphics :: 3D Modeling",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9", 
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "mcp[cli]>=1.3.0",
+    # Optional dependencies - Simple Server mode uses no external dependencies
+    "fastmcp>=2.7.0; python_version>='3.10'",
     "httpx>=0.24.0",
-    "ollama>=0.4.7",
+]
+
+[project.optional-dependencies]
+full = [
+    "fastmcp>=2.7.0",
+    "httpx>=0.24.0",
+    "uvicorn[standard]>=0.24.0",
+    "orjson>=3.9.0",
+]
+dev = [
+    "pytest>=7.0.0",
+    "black>=23.0.0",
+    "mypy>=1.0.0",
 ]
 
 [project.scripts]
-blender-open-mcp = "blender_open_mcp.server:main"
+blender-open-mcp = "blender_open_mcp.main:main"
 
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]
@@ -31,4 +56,6 @@ package-dir = {"" = "src"}
 
 [project.urls]
 "Homepage" = "https://github.com/dhakalnirajan/blender-open-mcp"
+"Documentation" = "https://github.com/dhakalnirajan/blender-open-mcp/blob/main/BLENDER_MCP_SETUP_GUIDE.md"
 "Bug Tracker" = "https://github.com/dhakalnirajan/blender-open-mcp/issues"
+"Source Code" = "https://github.com/dhakalnirajan/blender-open-mcp"

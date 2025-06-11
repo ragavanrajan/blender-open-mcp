@@ -1,33 +1,14 @@
-# Core MCP dependencies (using official SDK that supports Python 3.8)
-mcp>=1.0.0
+# FastMCP framework for Full MCP Server mode (Python 3.10+)
+fastmcp>=2.7.0
 
-# HTTP client for API requests
+# HTTP client for Ollama and API requests
 httpx>=0.24.0
 
-# Ollama integration
-ollama>=0.4.7
+# Optional: For improved async performance
+uvicorn[standard]>=0.24.0
 
-# Web framework dependencies (FastMCP likely uses these)
-fastapi>=0.104.0
-uvicorn>=0.24.0
-starlette>=0.27.0
-pydantic>=2.0.0
-
-# Additional production dependencies for Azure Web App
-gunicorn>=21.2.0
-python-multipart>=0.0.6
-
-# Logging and monitoring
-structlog>=23.2.0
-
-# Environment and configuration
-python-dotenv>=1.0.0
-
-# JSON handling (though built-in json should work)
+# Optional: Enhanced JSON handling
 orjson>=3.9.0
 
-# Async utilities
-anyio>=4.0.0
-
-# Security
-cryptography>=41.0.0 
+# Note: Simple Server mode (Python 3.8+) requires NO additional dependencies
+# It uses only Python standard library (http.server, socket, json, etc.) 

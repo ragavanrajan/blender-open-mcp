@@ -5,6 +5,8 @@
 ## Features
 
 - **Control Blender with Natural Language:** Send prompts to a locally running Ollama model to perform actions in Blender.
+- **Python Version Compatibility:** Works with Python 3.8+ (Simple Mode) and Python 3.10+ (Full MCP Mode) with automatic detection
+- **Auto-Detection System:** Automatically selects the best server mode based on your Python version and available dependencies
 - **MCP Integration:** Uses the Model Context Protocol for structured communication between the AI model and Blender.
 - **Ollama Support:** Designed to work with Ollama for easy local model management.
 - **Blender Add-on:** Includes a Blender add-on to provide a user interface and handle communication with the server.
@@ -16,17 +18,16 @@
   - Apply materials
 - **Render Support:** Render images using the tool and retrieve information based on the output.
 
-## Installation
+## Quick Start
 
 ### Prerequisites
 
 1. **Blender:** Blender 3.0 or later. Download from [blender.org](https://www.blender.org/download/).
 2. **Ollama:** Install from [ollama.com](https://ollama.com/), following OS-specific instructions.
-3. **Python:** Python 3.10 or later.
-4. **uv:** Install using `pip install uv`.
-5. **Git:** Required for cloning the repository.
+3. **Python:** Python 3.8 or later (Python 3.10+ recommended for full MCP features).
+4. **Git:** Required for cloning the repository.
 
-### Installation Steps
+### Installation
 
 1. **Clone the Repository:**
 
@@ -35,21 +36,19 @@
    cd blender-open-mcp
    ```
 
-2. **Create and Activate a Virtual Environment (Recommended):**
+2. **Install Dependencies:**
 
+   For **Python 3.10+** (Full MCP Mode):
    ```bash
-   uv venv
-   source .venv/bin/activate  # On Linux/macOS
-   .venv\Scripts\activate  # On Windows
+   pip install -r requirements.txt
    ```
 
-3. **Install Dependencies:**
-
+   For **Python 3.8-3.9** (Simple Mode):
    ```bash
-   uv pip install -e .
+   # No additional dependencies needed - uses Python standard library only
    ```
 
-4. **Install the Blender Add-on:**
+3. **Install the Blender Add-on:**
 
    - Open Blender.
    - Go to `Edit -> Preferences -> Add-ons`.
@@ -57,77 +56,86 @@
    - Select the `addon.py` file from the `blender-open-mcp` directory.
    - Enable the "Blender MCP" add-on.
 
-5. **Download an Ollama Model (if not already installed):**
+4. **Download an Ollama Model (if not already installed):**
 
    ```bash
    ollama run llama3.2
    ```
 
-   *(Other models like **`Gemma3`** can also be used.)*
+### Running the Server
 
-## Setup
+**🚀 Automatic Mode (Recommended):**
+```bash
+python main.py
+```
 
-1. **Start the Ollama Server:** Ensure Ollama is running in the background.
+The system will automatically:
+- Detect your Python version
+- Check for FastMCP availability  
+- Select Full MCP Server (Python 3.10+) or Simple Server (Python 3.8+)
+- Display upgrade suggestions if applicable
 
-2. **Start the MCP Server:**
+**Manual Mode Options:**
 
-   ```bash
-   blender-mcp
-   ```
+For **Full MCP Server** (Python 3.10+):
+```bash
+python main.py --mode mcp --port 8000
+```
 
-   Or,
+For **Simple Server** (Python 3.8+):
+```bash
+python main.py --mode simple --port 8000
+```
 
-   ```bash
-   python src/blender_open_mcp/server.py
-   ```
+### Blender Setup
 
-   By default, it listens on `http://0.0.0.0:8000`, but you can modify settings:
-
-   ```bash
-   blender-mcp --host 127.0.0.1 --port 8001 --ollama-url http://localhost:11434 --ollama-model llama3.2
-   ```
-
-3. **Start the Blender Add-on Server:**
-
+1. **Start the Blender Add-on Server:**
    - Open Blender and the 3D Viewport.
    - Press `N` to open the sidebar.
    - Find the "Blender MCP" panel.
    - Click "Start MCP Server".
 
+## Server Modes Comparison
+
+| Feature | Full MCP Server (Python 3.10+) | Simple Server (Python 3.8+) |
+|---------|--------------------------------|------------------------------|
+| **Basic Blender Integration** | ✅ Full Support | ✅ Full Support |
+| **Ollama AI Integration** | ✅ Advanced Features | ✅ Basic Features |
+| **Model Context Protocol** | ✅ Complete MCP Support | ❌ HTTP REST Only |
+| **Production ASGI Deployment** | ✅ FastMCP/Uvicorn | ❌ HTTP Server Only |
+| **Advanced Error Handling** | ✅ Enhanced | ✅ Basic |
+| **Image Handling** | ✅ Full Support | ✅ Full Support |
+| **Dependencies** | FastMCP, httpx, etc. | Python Standard Library Only |
+
 ## Usage
 
-Interact with `blender-open-mcp` using the `mcp` command-line tool:
+Interact with `blender-open-mcp` using the `mcp` command-line tool or HTTP requests:
 
 ### Example Commands
 
-- **Basic Prompt:**
+- **Basic Health Check:**
 
   ```bash
-  mcp prompt "Hello BlenderMCP!" --host http://localhost:8000
+  curl http://localhost:8000/health_check
   ```
 
 - **Get Scene Information:**
 
   ```bash
-  mcp tool get_scene_info --host http://localhost:8000
+  curl -X POST http://localhost:8000/get_scene_info -H "Content-Type: application/json" -d "{}"
   ```
 
 - **Create a Cube:**
 
   ```bash
-  mcp prompt "Create a cube named 'my_cube'." --host http://localhost:8000
+  curl -X POST http://localhost:8000/create_object -H "Content-Type: application/json" -d '{"type": "CUBE", "name": "my_cube"}'
   ```
 
-- **Render an Image:**
+- **Using MCP (Full Mode Only):**
 
   ```bash
-  mcp prompt "Render the image." --host http://localhost:8000
-  ```
-
-- **Using PolyHaven (if enabled):**
-
-  ```bash
-  mcp prompt "Download a texture from PolyHaven." --host http://localhost:8000
+  mcp prompt "Hello BlenderMCP!" --host http://localhost:8000
+  mcp tool get_scene_info --host http://localhost:8000
   ```
 
 ## Available Tools
@@ -137,7 +145,7 @@ Interact with `blender-open-mcp` using the `mcp` command-line tool:
 | `get_scene_info`           | Retrieves scene details.               | None                                                  |
 | `get_object_info`          | Retrieves information about an object. | `object_name` (str)                                   |
 | `create_object`            | Creates a 3D object.                   | `type`, `name`, `location`, `rotation`, `scale`       |
-| `modify_object`            | Modifies an object’s properties.       | `name`, `location`, `rotation`, `scale`, `visible`    |
+| `modify_object`            | Modifies an object's properties.       | `name`, `location`, `rotation`, `scale`, `visible`    |
 | `delete_object`            | Deletes an object.                     | `name` (str)                                          |
 | `set_material`             | Assigns a material to an object.       | `object_name`, `material_name`, `color`               |
 | `render_image`             | Renders an image.                      | `file_path` (str)                                     |
@@ -155,7 +163,7 @@ Interact with `blender-open-mcp` using the `mcp` command-line tool:
 If you encounter issues:
 
 - Ensure Ollama and the `blender-open-mcp` server are running.
-- Check Blender’s add-on settings.
+- Check Blender's add-on settings.
 - Verify command-line arguments.
 - Refer to logs for error details.
 
