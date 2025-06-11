@@ -1,174 +1,177 @@
-# blender-open-mcp
+# 🎨 BlenderMCP - Blender Model Communication Protocol
 
-`blender-open-mcp` is an open source project that integrates Blender with local AI models (via [Ollama](https://ollama.com/)) using the Model Context Protocol (MCP). This allows you to control Blender using natural language prompts, leveraging the power of AI to assist with 3D modeling tasks.
+A comprehensive solution for controlling Blender remotely via REST API and MCP protocol, with full Copilot Studio integration.
 
-## Features
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Status: Active](https://img.shields.io/badge/Status-Active-green.svg)]()
 
-- **Control Blender with Natural Language:** Send prompts to a locally running Ollama model to perform actions in Blender.
-- **Python Version Compatibility:** Works with Python 3.8+ (Simple Mode) and Python 3.10+ (Full MCP Mode) with automatic detection
-- **Auto-Detection System:** Automatically selects the best server mode based on your Python version and available dependencies
-- **MCP Integration:** Uses the Model Context Protocol for structured communication between the AI model and Blender.
-- **Ollama Support:** Designed to work with Ollama for easy local model management.
-- **Blender Add-on:** Includes a Blender add-on to provide a user interface and handle communication with the server.
-- **PolyHaven Integration (Optional):** Download and use assets (HDRIs, textures, models) from [PolyHaven](https://polyhaven.com/) directly within Blender via AI prompts.
-- **Basic 3D Operations:**
-  - Get Scene and Object Info
-  - Create Primitives
-  - Modify and delete objects
-  - Apply materials
-- **Render Support:** Render images using the tool and retrieve information based on the output.
+## 🚀 Quick Start
 
-## Quick Start
+### Option A: Simple Start (Recommended)
+```bash
+# Start the REST server (separate endpoints)
+./scripts/start/start-rest-server.ps1
+
+# Or start everything (server + tunnel)
+./scripts/start/start-everything.ps1
+```
+
+### Option B: Manual Start
+```bash
+# 1. Start the REST server
+python -c "import sys; sys.path.insert(0, 'src'); from blender_open_mcp.rest_server import run_rest_server; run_rest_server('0.0.0.0', 8000)"
+
+# 2. Start the tunnel (in another terminal)
+./tools/cloudflared.exe tunnel --config config/tunnel/tunnel-config.yml run
+```
+
+## 📁 Project Structure
+
+```
+blender-open-mcp/
+├── 📖 docs/                          # Documentation
+│   ├── 🛠️  setup/                    # Setup guides
+│   ├── 📋 api/                       # API documentation  
+│   ├── 🔧 troubleshooting/           # Troubleshooting guides
+│   └── 🤖 copilot-studio/            # Copilot Studio integration
+├── 🐍 src/                           # Source code
+│   └── blender_open_mcp/             # Main package
+├── 🚀 scripts/                       # Utility scripts
+│   ├── start/                        # Startup scripts
+│   ├── test/                         # Test scripts
+│   └── utils/                        # Utility scripts
+├── ⚙️  config/                        # Configuration files
+│   ├── tunnel/                       # Tunnel configurations
+│   └── swagger/                      # API specifications
+├── 📝 examples/                      # Example usage
+├── 🛠️  tools/                        # External tools
+└── 🏗️  .github/                      # GitHub workflows
+```
+
+## 🌟 Features
+
+- **🎯 Two API Approaches**: Single endpoint (legacy) and REST endpoints (recommended)
+- **🌐 Public Access**: Cloudflare tunnel for external access
+- **🤖 Copilot Studio**: Full integration with Microsoft Copilot Studio
+- **🔄 Live Blender Control**: Real-time object creation, modification, and scene management
+- **📊 Comprehensive API**: Health checks, scene info, object manipulation, material application
+- **🛡️ CORS Support**: Cross-origin resource sharing enabled
+- **📋 OpenAPI Documentation**: Complete Swagger/OpenAPI specifications
+
+## 📚 Documentation
+
+| Document | Description |
+|----------|-------------|
+| **Setup Guides** |
+| [📖 Setup Guide](docs/setup/BLENDER_MCP_SETUP_GUIDE.md) | Complete setup instructions |
+| [🏠 Local Setup](docs/setup/LOCAL_SETUP_GUIDE.md) | Local development setup |
+| [👥 Team Setup](docs/setup/team_setup_guide.md) | Team collaboration setup |
+| **API Documentation** |
+| [📊 API Comparison](docs/api/API_COMPARISON.md) | Single vs REST endpoints |
+| [📋 Swagger Files](config/swagger/) | OpenAPI specifications |
+| **Copilot Studio** |
+| [🤖 Copilot Guide](docs/copilot-studio/COPILOT_STUDIO_GUIDE.md) | Complete integration guide |
+| [🔌 Custom Connector](docs/copilot-studio/CUSTOM_CONNECTOR_GUIDE.md) | Custom connector setup |
+| **Troubleshooting** |
+| [🐛 Python Upgrade](docs/troubleshooting/PYTHON311_UPGRADE_SUMMARY.md) | Python 3.11 upgrade notes |
+
+## 🛠️ API Options
+
+### Option A: Single Endpoint (Legacy)
+- **Endpoint**: `POST /`
+- **Format**: `{"command": "command_name", "params": {...}}`
+- **Swagger**: [config/swagger/blender-mcp-swagger2.yaml](config/swagger/blender-mcp-swagger2.yaml)
+
+### Option B: REST Endpoints (Recommended) ⭐
+- **Health**: `GET /api/v2/health`
+- **Scene**: `GET /api/v2/scene`
+- **Objects**: `POST /api/v2/objects`, `GET /api/v2/objects/{name}`, etc.
+- **Swagger**: [config/swagger/blender-mcp-separate-endpoints.yaml](config/swagger/blender-mcp-separate-endpoints.yaml)
+
+## 🌐 Access URLs
+
+- **Local**: http://localhost:8000
+- **Public**: https://blender-open-mcp-de.com
+- **REST API**: https://blender-open-mcp-de.com/api/v2/
+
+## 🧪 Testing
+
+```bash
+# Health check (REST)
+curl https://blender-open-mcp-de.com/api/v2/health
+
+# Health check (Legacy)
+curl -X POST https://blender-open-mcp-de.com/ \
+  -H "Content-Type: application/json" \
+  -d '{"command": "health_check"}'
+
+# Create a cube
+curl -X POST https://blender-open-mcp-de.com/api/v2/objects \
+  -H "Content-Type: application/json" \
+  -d '{"type": "CUBE", "name": "MyCube"}'
+```
+
+## 🔧 Development
 
 ### Prerequisites
+- Python 3.11+
+- Blender 4.0+ (running with socket server enabled)
+- Cloudflare tunnel (for external access)
 
-1. **Blender:** Blender 3.0 or later. Download from [blender.org](https://www.blender.org/download/).
-2. **Ollama:** Install from [ollama.com](https://ollama.com/), following OS-specific instructions.
-3. **Python:** Python 3.8 or later (Python 3.10+ recommended for full MCP features).
-4. **Git:** Required for cloning the repository.
+### Local Development
+```bash
+# Install dependencies
+pip install -r requirements.txt
 
-### Installation
+# Run tests
+python scripts/test/test_simple_server.py
 
-1. **Clone the Repository:**
+# Start development server
+python -c "import sys; sys.path.insert(0, 'src'); from blender_open_mcp.rest_server import run_rest_server; run_rest_server()"
+```
 
+## 📦 Installation
+
+1. **Clone the repository**:
    ```bash
-   git clone https://github.com/dhakalnirajan/blender-open-mcp.git
+   git clone https://github.com/your-username/blender-open-mcp.git
    cd blender-open-mcp
    ```
 
-2. **Install Dependencies:**
-
-   For **Python 3.10+** (Full MCP Mode):
+2. **Install dependencies**:
    ```bash
    pip install -r requirements.txt
    ```
 
-   For **Python 3.8-3.9** (Simple Mode):
-   ```bash
-   # No additional dependencies needed - uses Python standard library only
-   ```
+3. **Configure Blender**: Follow the [setup guide](docs/setup/BLENDER_MCP_SETUP_GUIDE.md)
 
-3. **Install the Blender Add-on:**
+4. **Start the server**: Use one of the startup scripts in `scripts/start/`
 
-   - Open Blender.
-   - Go to `Edit -> Preferences -> Add-ons`.
-   - Click `Install...`.
-   - Select the `addon.py` file from the `blender-open-mcp` directory.
-   - Enable the "Blender MCP" add-on.
+## 🤝 Contributing
 
-4. **Download an Ollama Model (if not already installed):**
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Commit your changes: `git commit -m 'Add amazing feature'`
+4. Push to the branch: `git push origin feature/amazing-feature`
+5. Open a Pull Request
 
-   ```bash
-   ollama run llama3.2
-   ```
+## 📄 License
 
-### Running the Server
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-**🚀 Automatic Mode (Recommended):**
-```bash
-python main.py
-```
+## 🆘 Support
 
-The system will automatically:
-- Detect your Python version
-- Check for FastMCP availability  
-- Select Full MCP Server (Python 3.10+) or Simple Server (Python 3.8+)
-- Display upgrade suggestions if applicable
+- **Issues**: [GitHub Issues](https://github.com/your-username/blender-open-mcp/issues)
+- **Documentation**: [docs/](docs/)
+- **Troubleshooting**: [docs/troubleshooting/](docs/troubleshooting/)
 
-**Manual Mode Options:**
+## 🙏 Acknowledgments
 
-For **Full MCP Server** (Python 3.10+):
-```bash
-python main.py --mode mcp --port 8000
-```
-
-For **Simple Server** (Python 3.8+):
-```bash
-python main.py --mode simple --port 8000
-```
-
-### Blender Setup
-
-1. **Start the Blender Add-on Server:**
-   - Open Blender and the 3D Viewport.
-   - Press `N` to open the sidebar.
-   - Find the "Blender MCP" panel.
-   - Click "Start MCP Server".
-
-## Server Modes Comparison
-
-| Feature | Full MCP Server (Python 3.10+) | Simple Server (Python 3.8+) |
-|---------|--------------------------------|------------------------------|
-| **Basic Blender Integration** | ✅ Full Support | ✅ Full Support |
-| **Ollama AI Integration** | ✅ Advanced Features | ✅ Basic Features |
-| **Model Context Protocol** | ✅ Complete MCP Support | ❌ HTTP REST Only |
-| **Production ASGI Deployment** | ✅ FastMCP/Uvicorn | ❌ HTTP Server Only |
-| **Advanced Error Handling** | ✅ Enhanced | ✅ Basic |
-| **Image Handling** | ✅ Full Support | ✅ Full Support |
-| **Dependencies** | FastMCP, httpx, etc. | Python Standard Library Only |
-
-## Usage
-
-Interact with `blender-open-mcp` using the `mcp` command-line tool or HTTP requests:
-
-### Example Commands
-
-- **Basic Health Check:**
-
-  ```bash
-  curl http://localhost:8000/health_check
-  ```
-
-- **Get Scene Information:**
-
-  ```bash
-  curl -X POST http://localhost:8000/get_scene_info -H "Content-Type: application/json" -d "{}"
-  ```
-
-- **Create a Cube:**
-
-  ```bash
-  curl -X POST http://localhost:8000/create_object -H "Content-Type: application/json" -d '{"type": "CUBE", "name": "my_cube"}'
-  ```
-
-- **Using MCP (Full Mode Only):**
-
-  ```bash
-  mcp prompt "Hello BlenderMCP!" --host http://localhost:8000
-  mcp tool get_scene_info --host http://localhost:8000
-  ```
-
-## Available Tools
-
-| Tool Name                  | Description                            | Parameters                                            |
-| -------------------------- | -------------------------------------- | ----------------------------------------------------- |
-| `get_scene_info`           | Retrieves scene details.               | None                                                  |
-| `get_object_info`          | Retrieves information about an object. | `object_name` (str)                                   |
-| `create_object`            | Creates a 3D object.                   | `type`, `name`, `location`, `rotation`, `scale`       |
-| `modify_object`            | Modifies an object's properties.       | `name`, `location`, `rotation`, `scale`, `visible`    |
-| `delete_object`            | Deletes an object.                     | `name` (str)                                          |
-| `set_material`             | Assigns a material to an object.       | `object_name`, `material_name`, `color`               |
-| `render_image`             | Renders an image.                      | `file_path` (str)                                     |
-| `execute_blender_code`     | Executes Python code in Blender.       | `code` (str)                                          |
-| `get_polyhaven_categories` | Lists PolyHaven asset categories.      | `asset_type` (str)                                    |
-| `search_polyhaven_assets`  | Searches PolyHaven assets.             | `asset_type`, `categories`                            |
-| `download_polyhaven_asset` | Downloads a PolyHaven asset.           | `asset_id`, `asset_type`, `resolution`, `file_format` |
-| `set_texture`              | Applies a downloaded texture.          | `object_name`, `texture_id`                           |
-| `set_ollama_model`         | Sets the Ollama model.                 | `model_name` (str)                                    |
-| `set_ollama_url`           | Sets the Ollama server URL.            | `url` (str)                                           |
-| `get_ollama_models`        | Lists available Ollama models.         | None                                                  |
-
-## Troubleshooting
-
-If you encounter issues:
-
-- Ensure Ollama and the `blender-open-mcp` server are running.
-- Check Blender's add-on settings.
-- Verify command-line arguments.
-- Refer to logs for error details.
-
-For further assistance, visit the [GitHub Issues](https://github.com/dhakalnirajan/blender-open-mcp/issues) page.
+- Blender Foundation for the amazing 3D software
+- Cloudflare for tunnel technology
+- Microsoft for Copilot Studio integration capabilities
 
 ---
 
-Happy Blending with AI! 🚀
+**🎯 Ready to control Blender remotely? Start with our [Setup Guide](docs/setup/BLENDER_MCP_SETUP_GUIDE.md)!** 

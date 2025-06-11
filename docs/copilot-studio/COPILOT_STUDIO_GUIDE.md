@@ -9,13 +9,31 @@
 - **Blender Connection**: AVAILABLE on port 9876
 - **Cloudflare Tunnel**: WORKING at https://blender-open-mcp-de.com/
 - **Tunnel ID**: ff98000b-7cf0-4883-9f44-4c868867c6d4
+
+### **API Options**
+**Option A - Single Endpoint (Current)**:
 - **Health Check**: `POST /` with `{"command": "health_check"}` returns `{"status": "success", "message": "..."}`
+- **Swagger File**: `blender-mcp-swagger2.yaml`
+
+**Option B - REST Endpoints (New & Recommended)**:
+- **Health Check**: `GET /api/v2/health` returns `{"status": "success", "message": "...", "timestamp": "..."}`
+- **Swagger File**: `blender-mcp-separate-endpoints.yaml`
 
 ### **Server API Specification**
+
+**Option A - Single Endpoint API**:
 - **Endpoint**: POST /
 - **Commands**: health_check, get_scene_info, create_object, modify_object, remove_object, apply_material, execute_code, ai_prompt
 - **Request Format**: `{"command": "command_name", "params": {...}}`
 - **Response Format**: `{"status": "success/error", "message": "...", "data": {...}}`
+
+**Option B - REST Endpoints API**:
+- **Health**: `GET /api/v2/health`
+- **Scene**: `GET /api/v2/scene`  
+- **Objects**: `POST /api/v2/objects`, `GET /api/v2/objects/{name}`, `PUT /api/v2/objects/{name}`, `DELETE /api/v2/objects/{name}`
+- **Materials**: `POST /api/v2/objects/{name}/material`
+- **Execute**: `POST /api/v2/execute`
+- **AI**: `POST /api/v2/ai/prompt`
 
 ## 🚨 **Common Issues & Solutions**
 
@@ -33,13 +51,31 @@
 
 ## 🔗 **Custom Connector Configuration**
 
-### **Custom Connector Base Configuration**
+### **Option A: Single Endpoint Configuration (Current)**
+
+**Custom Connector Base Configuration**
 ```
 Display Name: BlenderMCP
 Host URL: https://blender-open-mcp-de.com
 Base URL: /
 Authentication Type: No authentication
 ```
+
+### **Option B: REST Endpoints Configuration (Recommended)**
+
+**Custom Connector Base Configuration**
+```
+Display Name: BlenderMCP REST
+Host URL: https://blender-open-mcp-de.com
+Base URL: /api/v2
+Authentication Type: No authentication
+```
+
+**Import Swagger**: Use `blender-mcp-separate-endpoints.yaml`
+
+---
+
+## 📋 **Option A Configuration (Single Endpoint)**
 
 ### **Action 1: GetHealth - CORRECTED**
 ```

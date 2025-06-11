@@ -62,7 +62,7 @@ try {
     
     $serverJob2 = Start-Job -ScriptBlock {
         Set-Location "E:\MyDev\MyMCP\blender-open-mcp"
-        python main.py --host 0.0.0.0 --port 8000
+        python examples\main.py --host 0.0.0.0 --port 8000
     }
     Start-Sleep 8
     
@@ -80,7 +80,7 @@ Write-Host "🌐 Step 6: Starting Cloudflare tunnel..." -ForegroundColor Yellow
 Write-Host "  Using tunnel ID: ff98000b-7cf0-4883-9f44-4c868867c6d4" -ForegroundColor Gray
 $tunnelJob = Start-Job -ScriptBlock {
     Set-Location "E:\MyDev\MyMCP\blender-open-mcp"
-    & ".\cloudflared.exe" tunnel run --config tunnel-config.yml
+    & ".\tools\cloudflared.exe" tunnel run --config config\tunnel\tunnel-config.yml
 }
 
 # Wait for tunnel to establish

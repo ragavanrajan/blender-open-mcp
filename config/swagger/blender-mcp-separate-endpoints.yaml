@@ -1,0 +1,555 @@
+swagger: "2.0"
+info:
+  title: Blender MCP API - Separate Endpoints
+  description: AI-powered Blender automation with dedicated REST endpoints
+  version: "2.0.0"
+host: blender-open-mcp-de.com
+schemes:
+  - https
+basePath: /api/v2
+consumes:
+  - application/json
+produces:
+  - application/json
+
+paths:
+  # Health Check Endpoint
+  /health:
+    get:
+      summary: Health Check
+      description: Check if the BlenderMCP server is running
+      operationId: GetHealth
+      responses:
+        "200":
+          description: Server is healthy
+          schema:
+            $ref: "#/definitions/HealthResponse"
+        "500":
+          description: Server error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+
+  # Scene Information Endpoint
+  /scene:
+    get:
+      summary: Get Scene Info
+      description: Get current Blender scene information
+      operationId: GetSceneInfo
+      responses:
+        "200":
+          description: Scene information retrieved successfully
+          schema:
+            $ref: "#/definitions/SceneInfoResponse"
+        "500":
+          description: Server error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+
+  # Objects Endpoints
+  /objects:
+    post:
+      summary: Create Object
+      description: Create a new 3D object in Blender
+      operationId: CreateObject
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: "#/definitions/CreateObjectRequest"
+      responses:
+        "200":
+          description: Object created successfully
+          schema:
+            $ref: "#/definitions/ObjectResponse"
+        "400":
+          description: Bad request - invalid parameters
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        "500":
+          description: Server error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+
+  /objects/{objectName}:
+    get:
+      summary: Get Object Info
+      description: Get information about a specific object
+      operationId: GetObjectInfo
+      parameters:
+        - name: objectName
+          in: path
+          required: true
+          type: string
+          description: Name of the object to get info for
+      responses:
+        "200":
+          description: Object information retrieved successfully
+          schema:
+            $ref: "#/definitions/ObjectInfoResponse"
+        "404":
+          description: Object not found
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        "500":
+          description: Server error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+
+    put:
+      summary: Modify Object
+      description: Modify an existing object's properties
+      operationId: ModifyObject
+      parameters:
+        - name: objectName
+          in: path
+          required: true
+          type: string
+          description: Name of the object to modify
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: "#/definitions/ModifyObjectRequest"
+      responses:
+        "200":
+          description: Object modified successfully
+          schema:
+            $ref: "#/definitions/ObjectResponse"
+        "404":
+          description: Object not found
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        "500":
+          description: Server error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+
+    delete:
+      summary: Remove Object
+      description: Remove an object from the scene
+      operationId: RemoveObject
+      parameters:
+        - name: objectName
+          in: path
+          required: true
+          type: string
+          description: Name of the object to remove
+      responses:
+        "200":
+          description: Object removed successfully
+          schema:
+            $ref: "#/definitions/SuccessResponse"
+        "404":
+          description: Object not found
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        "500":
+          description: Server error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+
+  # Materials Endpoint
+  /objects/{objectName}/material:
+    post:
+      summary: Apply Material
+      description: Apply a material to an object
+      operationId: ApplyMaterial
+      parameters:
+        - name: objectName
+          in: path
+          required: true
+          type: string
+          description: Name of the object to apply material to
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: "#/definitions/ApplyMaterialRequest"
+      responses:
+        "200":
+          description: Material applied successfully
+          schema:
+            $ref: "#/definitions/MaterialResponse"
+        "404":
+          description: Object not found
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        "500":
+          description: Server error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+
+  # Code Execution Endpoint
+  /execute:
+    post:
+      summary: Execute Python Code
+      description: Execute Python code in Blender
+      operationId: ExecuteCode
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: "#/definitions/ExecuteCodeRequest"
+      responses:
+        "200":
+          description: Code executed successfully
+          schema:
+            $ref: "#/definitions/ExecuteCodeResponse"
+        "400":
+          description: Bad request - invalid code
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        "500":
+          description: Execution error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+
+  # AI Assistant Endpoint
+  /ai/prompt:
+    post:
+      summary: AI Assistant
+      description: Send natural language prompts to AI for Blender operations
+      operationId: AiPrompt
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: "#/definitions/AiPromptRequest"
+      responses:
+        "200":
+          description: AI prompt processed successfully
+          schema:
+            $ref: "#/definitions/AiPromptResponse"
+        "400":
+          description: Bad request - invalid prompt
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        "500":
+          description: Server error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+
+definitions:
+  # Request Definitions
+  CreateObjectRequest:
+    type: object
+    required:
+      - type
+    properties:
+      type:
+        type: string
+        enum: [CUBE, SPHERE, CYLINDER, PLANE, CONE, TORUS, MONKEY]
+        description: Type of object to create
+        example: "CUBE"
+      name:
+        type: string
+        description: Name for the new object
+        example: "MyCube"
+      location:
+        type: array
+        items:
+          type: number
+        minItems: 3
+        maxItems: 3
+        default: [0, 0, 0]
+        description: 3D position [X, Y, Z]
+        example: [1.0, 2.0, 0.5]
+      rotation:
+        type: array
+        items:
+          type: number
+        minItems: 3
+        maxItems: 3
+        default: [0, 0, 0]
+        description: 3D rotation [RX, RY, RZ] in radians
+        example: [0, 0, 1.57]
+      scale:
+        type: array
+        items:
+          type: number
+        minItems: 3
+        maxItems: 3
+        default: [1, 1, 1]
+        description: 3D scale [SX, SY, SZ]
+        example: [2.0, 1.0, 1.0]
+
+  ModifyObjectRequest:
+    type: object
+    properties:
+      location:
+        type: array
+        items:
+          type: number
+        minItems: 3
+        maxItems: 3
+        description: New 3D position [X, Y, Z]
+        example: [5.0, 0.0, 2.0]
+      rotation:
+        type: array
+        items:
+          type: number
+        minItems: 3
+        maxItems: 3
+        description: New 3D rotation [RX, RY, RZ] in radians  
+        example: [0, 0, 3.14]
+      scale:
+        type: array
+        items:
+          type: number
+        minItems: 3
+        maxItems: 3
+        description: New 3D scale [SX, SY, SZ]
+        example: [1.5, 1.5, 1.5]
+
+  ApplyMaterialRequest:
+    type: object
+    required:
+      - material_name
+    properties:
+      material_name:
+        type: string
+        description: Name of material to apply
+        example: "Gold"
+      color:
+        type: array
+        items:
+          type: number
+          minimum: 0
+          maximum: 1
+        minItems: 3
+        maxItems: 3
+        default: [0.5, 0.5, 0.5]
+        description: RGB color values [R, G, B] from 0.0 to 1.0
+        example: [1.0, 0.8, 0.0]
+
+  ExecuteCodeRequest:
+    type: object
+    required:
+      - code
+    properties:
+      code:
+        type: string
+        description: Python code to execute
+        example: "bpy.ops.mesh.primitive_cube_add(location=(0, 0, 2))"
+      description:
+        type: string
+        description: Description of what the code does
+        example: "Add a cube at height 2"
+
+  AiPromptRequest:
+    type: object
+    required:
+      - prompt
+    properties:
+      prompt:
+        type: string
+        description: Natural language description of what to do
+        example: "Create a red sphere and move it above the default cube"
+      context:
+        type: string
+        description: Additional context or constraints
+        example: "Make it suitable for a product render"
+
+  # Response Definitions
+  HealthResponse:
+    type: object
+    properties:
+      status:
+        type: string
+        example: "success"
+      message:
+        type: string
+        example: "Simple Blender server is running!"
+      timestamp:
+        type: string
+        format: date-time
+        description: Server response timestamp
+
+  SceneInfoResponse:
+    type: object
+    properties:
+      status:
+        type: string
+        example: "success"
+      data:
+        type: object
+        properties:
+          objects:
+            type: array
+            items:
+              type: string
+            description: List of object names
+          materials:
+            type: array
+            items:
+              type: string
+            description: List of material names
+          cameras:
+            type: integer
+            description: Number of cameras
+          lights:
+            type: integer
+            description: Number of lights
+
+  ObjectResponse:
+    type: object
+    properties:
+      status:
+        type: string
+        example: "success"
+      message:
+        type: string
+        example: "Object created successfully"
+      data:
+        type: object
+        properties:
+          name:
+            type: string
+            description: Object name
+          type:
+            type: string
+            description: Object type
+          location:
+            type: array
+            items:
+              type: number
+            description: Object location
+
+  ObjectInfoResponse:
+    type: object
+    properties:
+      status:
+        type: string
+        example: "success"
+      data:
+        type: object
+        properties:
+          name:
+            type: string
+            description: Object name
+          type:
+            type: string
+            description: Object type
+          location:
+            type: array
+            items:
+              type: number
+            description: Object location
+          rotation:
+            type: array
+            items:
+              type: number
+            description: Object rotation
+          scale:
+            type: array
+            items:
+              type: number
+            description: Object scale
+          material:
+            type: string
+            description: Applied material name
+
+  MaterialResponse:
+    type: object
+    properties:
+      status:
+        type: string
+        example: "success"
+      message:
+        type: string
+        example: "Material applied successfully"
+      data:
+        type: object
+        properties:
+          object_name:
+            type: string
+            description: Target object name
+          material_name:
+            type: string
+            description: Applied material name
+          color:
+            type: array
+            items:
+              type: number
+            description: Applied color values
+
+  ExecuteCodeResponse:
+    type: object
+    properties:
+      status:
+        type: string
+        example: "success"
+      message:
+        type: string
+        example: "Code executed successfully"
+      data:
+        type: object
+        properties:
+          output:
+            type: string
+            description: Execution output
+          created_objects:
+            type: array
+            items:
+              type: string
+            description: Names of objects created by the code
+
+  AiPromptResponse:
+    type: object
+    properties:
+      status:
+        type: string
+        example: "success"
+      message:
+        type: string
+        example: "AI prompt processed successfully"
+      data:
+        type: object
+        properties:
+          interpretation:
+            type: string
+            description: AI's interpretation of the prompt
+          actions_taken:
+            type: array
+            items:
+              type: string
+            description: List of actions performed
+          created_objects:
+            type: array
+            items:
+              type: string
+            description: Names of objects created
+
+  SuccessResponse:
+    type: object
+    properties:
+      status:
+        type: string
+        example: "success"
+      message:
+        type: string
+        example: "Operation completed successfully"
+
+  ErrorResponse:
+    type: object
+    properties:
+      status:
+        type: string
+        example: "error"
+      message:
+        type: string
+        description: Error message
+        example: "Invalid request format"
+      error_code:
+        type: string
+        description: Specific error code
+        example: "INVALID_REQUEST"
+      details:
+        type: object
+        description: Additional error details
+
+# No authentication required for this server
+securityDefinitions: {}

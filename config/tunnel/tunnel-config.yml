@@ -1,0 +1,22 @@
+# BlenderMCP Cloudflare Tunnel Configuration
+# This file configures the tunnel routing for both API approaches
+
+tunnel: ff98000b-7cf0-4883-9f44-4c868867c6d4
+credentials-file: C:\Users\ragavan.rajan\.cloudflared\ff98000b-7cf0-4883-9f44-4c868867c6d4.json
+
+ingress:
+  # REST API endpoints (Option B - Recommended)
+  - hostname: blender-open-mcp-de.com
+    path: /api/v2
+    service: http://localhost:8000
+  
+  # Single endpoint API (Option A - Legacy)
+  - hostname: blender-open-mcp-de.com
+    service: http://localhost:8000
+  
+  # WWW redirect
+  - hostname: www.blender-open-mcp-de.com  
+    service: http://localhost:8000
+  
+  # Default fallback
+  - service: http_status:404 

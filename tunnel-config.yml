@@ -1,9 +1,0 @@
-tunnel: ff98000b-7cf0-4883-9f44-4c868867c6d4
-credentials-file: C:\Users\ragavan.rajan\.cloudflared\ff98000b-7cf0-4883-9f44-4c868867c6d4.json
-
-ingress:
-  - hostname: blender-open-mcp-de.com
-    service: http://localhost:8000
-  - hostname: www.blender-open-mcp-de.com  
-    service: http://localhost:8000
-  - service: http_status:404 
