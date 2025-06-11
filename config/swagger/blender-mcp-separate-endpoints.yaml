@@ -1,3 +1,25 @@
+# =======================================
+# Blender MCP API - Startup Instructions
+# =======================================
+#
+# To start the complete system (REST server + Tunnel):
+# Option 1: Use the main startup script:
+#   .\scripts\start\start-everything.ps1
+#
+# Option 2: Use the debugging version:
+#   .\scripts\start\start-everything-new-window.ps1
+#
+# Or manually start components:
+# 1. Start REST Server:
+#    python -c "import sys; sys.path.insert(0, 'src'); from blender_open_mcp.rest_server import run_rest_server; run_rest_server('0.0.0.0', 8000)"
+#
+# 2. Start Cloudflare Tunnel:
+#    .\tools\cloudflared.exe tunnel --config .\config\tunnel\tunnel-config.yml run
+#
+# Public URL: https://blender-open-mcp-de.com
+# Local URL: http://localhost:8000
+# =======================================
+
 swagger: "2.0"
 info:
   title: Blender MCP API - Separate Endpoints
