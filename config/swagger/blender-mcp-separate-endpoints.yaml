@@ -292,33 +292,22 @@ definitions:
         type: string
         description: Optional name for the new object. If not provided, Blender will auto-generate a name.
         example: "MyCube"
+        default: ""
       location:
-        type: array
-        items:
-          type: number
-        minItems: 3
-        maxItems: 3
-        default: [0, 0, 0]
-        description: 3D position [X, Y, Z] coordinates where to place the object
-        example: [1.0, 2.0, 0.5]
+        type: string
+        description: 3D position as comma-separated values "X,Y,Z" coordinates where to place the object. Default is "0,0,0"
+        example: "1.0,2.0,0.5"
+        default: "0,0,0"
       rotation:
-        type: array
-        items:
-          type: number
-        minItems: 3
-        maxItems: 3
-        default: [0, 0, 0]
-        description: 3D rotation [RX, RY, RZ] in radians
-        example: [0, 0, 1.57]
+        type: string
+        description: 3D rotation as comma-separated values "RX,RY,RZ" in radians. Default is "0,0,0"
+        example: "0,0,1.57"
+        default: "0,0,0"
       scale:
-        type: array
-        items:
-          type: number
-        minItems: 3
-        maxItems: 3
-        default: [1, 1, 1]
-        description: 3D scale [SX, SY, SZ] multipliers
-        example: [2.0, 1.0, 1.0]
+        type: string
+        description: 3D scale as comma-separated values "SX,SY,SZ" multipliers. Default is "1,1,1"
+        example: "2.0,1.0,1.0"
+        default: "1,1,1"
 
   ModifyObjectRequest:
     type: object

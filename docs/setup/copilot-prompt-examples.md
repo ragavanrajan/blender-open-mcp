@@ -8,6 +8,29 @@ Transform your creative workflow with AI-powered Blender automation! This guide 
 
 Simply use these prompts in your Copilot Studio agent, and watch as AI creates stunning 3D content automatically!
 
+## 🚨 **CRITICAL: Copilot Studio Connector Issues**
+
+### **Missing Input Fields Problem**
+If your Copilot Studio connector only shows the `type` field and is missing `name`, `location`, `rotation`, and `scale` fields:
+
+**🔧 Solution Steps:**
+1. **Delete the existing connector** in Copilot Studio
+2. **Re-import the connector** using the same Swagger URL: `https://blender-open-mcp-de.com/config/swagger/blender-mcp-separate-endpoints.yaml`
+3. **Verify all fields appear**: You should see 5 input fields total
+4. **Test the connection** before using in prompts
+
+**📋 Expected Input Fields:**
+- `type` (String, Required) - Object type: CUBE, SPHERE, etc.
+- `name` (String, Optional) - Custom object name
+- `location` (String, Optional) - Position as "X,Y,Z" (e.g., "1,2,3")
+- `rotation` (String, Optional) - Rotation as "RX,RY,RZ" (e.g., "0,0,1.57")
+- `scale` (String, Optional) - Scale as "SX,SY,SZ" (e.g., "2,1,1")
+
+**⚠️ Important Notes:**
+- Use **comma-separated strings** for coordinates (not arrays)
+- Object types must be **UPPERCASE** (CUBE, not cube)
+- Empty fields will use Blender defaults
+
 ## ⚠️ **Quick Reference - Object Types**
 **Always use UPPERCASE for object types:**
 - `CUBE` - Standard cube mesh
@@ -352,67 +375,3 @@ This will help me understand coordinate systems."
 
 ### Geometric Art Piece
 ```
-"Create a mathematical art installation:
-- Generate a Fibonacci spiral using spheres of increasing size
-- Each sphere should be positioned following the golden ratio
-- Use a color gradient from purple to gold across the spiral
-- Add a base platform underneath
-- Make it look like a museum piece"
-```
-
----
-
-## 📞 Support & Community
-
-**Need Help?** 
-- Check the [Troubleshooting Guide](../troubleshooting/)
-- Review the [API Documentation](../api/)
-- Test your connection with: `"Check if my Blender server is running"`
-
-**Share Your Creations!**
-We'd love to see what you create with these prompts. Share your results and inspire others!
-
----
-
-*Happy Creating! 🎨✨*
-
-> **Note:** All prompts are designed to work with your Blender MCP REST API at `https://blender-open-mcp-de.com`. Make sure your server is running before trying these examples. 
-
-## 🚨 Common Errors & Solutions
-
-### Error 1: "Invalid object type"
-**Problem:** Using lowercase object types  
-**Solution:** Always use uppercase: `CUBE`, `SPHERE`, `CYLINDER`, `PLANE`, `CONE`, `TORUS`, `MONKEY`
-
-**Wrong:**
-```json
-{"type": "cube", "name": "MyCube"}
-```
-
-**Correct:**
-```json
-{"type": "CUBE", "name": "MyCube"}
-```
-
-### Error 2: "Connection refused" or "502 Bad Gateway"
-**Problem:** Server not running or tunnel disconnected  
-**Solution:** Check server status with health check prompt:
-```
-"Check if my Blender MCP server is running properly and show me the connection status."
-```
-
-### Error 3: Objects not appearing as expected
-**Problem:** Incorrect coordinate system understanding  
-**Solution:** Use specific coordinates and test with simple positions first:
-```
-"Create a CUBE at position (0, 0, 0) to test the coordinate system"
-```
-
-### Error 4: Material application fails
-**Problem:** Object doesn't exist or wrong object name  
-**Solution:** Create object first, then apply material:
-```
-"First create a SPHERE named 'TestSphere', then apply a red material to it"
-```
-
---- 

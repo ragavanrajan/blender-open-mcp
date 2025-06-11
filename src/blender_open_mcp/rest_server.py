@@ -313,34 +313,58 @@ class RESTHTTPHandler(BaseHTTPRequestHandler):
                     "error_code": "INVALID_OBJECT_TYPE"
                 }
             
-            # Validate location array if provided
-            if "location" in params:
-                location = params["location"]
-                if not isinstance(location, list) or len(location) != 3:
-                    return {"status": "error", "message": "Location must be an array of 3 numbers [X, Y, Z]", "error_code": "INVALID_LOCATION"}
-                if not all(isinstance(x, (int, float)) for x in location):
-                    return {"status": "error", "message": "Location values must be numbers", "error_code": "INVALID_LOCATION"}
+            # Helper function to parse string or array coordinates
+            def parse_coordinates(value, field_name: str, allow_zero: bool = True):
+                if isinstance(value, str):
+                    # Parse comma-separated string like "1.0,2.0,0.5"
+                    try:
+                        coords = [float(x.strip()) for x in value.split(',')]
+                        if len(coords) != 3:
+                            return None, f"{field_name} string must contain exactly 3 comma-separated values"
+                        return coords, None
+                    except ValueError:
+                        return None, f"{field_name} string contains invalid numbers"
+                elif isinstance(value, list):
+                    # Validate array format
+                    if len(value) != 3:
+                        return None, f"{field_name} must be an array of 3 numbers"
+                    if not all(isinstance(x, (int, float)) for x in value):
+                        return None, f"{field_name} values must be numbers"
+                    return value, None
+                else:
+                    return None, f"{field_name} must be either a string 'X,Y,Z' or array [X,Y,Z]"
             
-            # Validate rotation array if provided
-            if "rotation" in params:
-                rotation = params["rotation"]
-                if not isinstance(rotation, list) or len(rotation) != 3:
-                    return {"status": "error", "message": "Rotation must be an array of 3 numbers [RX, RY, RZ]", "error_code": "INVALID_ROTATION"}
-                if not all(isinstance(x, (int, float)) for x in rotation):
-                    return {"status": "error", "message": "Rotation values must be numbers", "error_code": "INVALID_ROTATION"}
+            # Process and validate location if provided
+            if "location" in params and params["location"]:
+                location, error = parse_coordinates(params["location"], "Location")
+                if error:
+                    return {"status": "error", "message": error, "error_code": "INVALID_LOCATION"}
+                params["location"] = location
             
-            # Validate scale array if provided
-            if "scale" in params:
-                scale = params["scale"]
-                if not isinstance(scale, list) or len(scale) != 3:
-                    return {"status": "error", "message": "Scale must be an array of 3 numbers [SX, SY, SZ]", "error_code": "INVALID_SCALE"}
-                if not all(isinstance(x, (int, float)) for x in scale):
-                    return {"status": "error", "message": "Scale values must be numbers", "error_code": "INVALID_SCALE"}
+            # Process and validate rotation if provided
+            if "rotation" in params and params["rotation"]:
+                rotation, error = parse_coordinates(params["rotation"], "Rotation")
+                if error:
+                    return {"status": "error", "message": error, "error_code": "INVALID_ROTATION"}
+                params["rotation"] = rotation
+            
+            # Process and validate scale if provided
+            if "scale" in params and params["scale"]:
+                scale, error = parse_coordinates(params["scale"], "Scale", allow_zero=False)
+                if error:
+                    return {"status": "error", "message": error, "error_code": "INVALID_SCALE"}
                 if any(x <= 0 for x in scale):
                     return {"status": "error", "message": "Scale values must be positive numbers", "error_code": "INVALID_SCALE"}
+                params["scale"] = scale
+            
+            # Clean up empty string parameters
+            cleaned_params = {}
+            for key, value in params.items():
+                if value != "":  # Skip empty strings but keep other falsy values like 0
+                    cleaned_params[key] = value
             
             blender = get_blender_connection()
-            result = blender.send_command("create_object", params)
+            result = blender.send_command("create_object", cleaned_params)
             return {"status": "success", "message": "Object created successfully", "data": result}
         except Exception as e:
             return {"status": "error", "message": str(e), "error_code": "BLENDER_ERROR"}
