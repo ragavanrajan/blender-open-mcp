@@ -114,7 +114,7 @@ _blender_connection = None
 def get_blender_connection() -> BlenderConnection:
     global _blender_connection
     if _blender_connection is None:
-        _blender_connection = BlenderConnection("localhost", 9999)
+        _blender_connection = BlenderConnection("localhost", 9876)
     return _blender_connection
 
 class SimpleHTTPHandler(BaseHTTPRequestHandler):

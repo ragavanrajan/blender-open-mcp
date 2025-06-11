@@ -54,9 +54,12 @@ git clone https://github.com/dhakalnirajan/blender-open-mcp.git
 cd blender-open-mcp
 
 # 2. Install full MCP dependencies
-pip install fastmcp httpx
+pip install fastmcp httpx uvicorn
 
-# 3. Start the full MCP server (auto-detected)
+# 3. Start the full MCP server with uvicorn (recommended)
+uvicorn src.blender_open_mcp.server:app --host 0.0.0.0 --port 8000
+
+# OR use auto-detected method
 python main.py
 
 # 4. Verify everything works
@@ -146,7 +149,7 @@ python --version  # Should show 3.8 or 3.9
 #### **For Python 3.10+ (Full MCP Mode)**
 ```bash
 # Install full MCP dependencies
-pip install fastmcp
+pip install fastmcp uvicorn
 pip install -r requirements.txt
 ```
 
@@ -175,7 +178,19 @@ curl http://localhost:11434/api/tags
 
 ### **Step 5: Start the Server**
 
-#### **Auto-Detected Start (Recommended)**
+#### **FastAPI/Uvicorn Method (Recommended for Production)**
+```bash
+# Start with uvicorn for full FastAPI features (Python 3.10+)
+uvicorn app:app --host 0.0.0.0 --port 8000
+
+# OR if you have FastMCP installed directly
+uvicorn src.blender_open_mcp.server:app --host 0.0.0.0 --port 8000
+
+# With reload for development
+uvicorn src.blender_open_mcp.server:app --host 0.0.0.0 --port 8000 --reload
+```
+
+#### **Auto-Detected Start (Alternative)**
 ```bash
 # Automatically detects Python version and uses the best available server
 python main.py
@@ -198,12 +213,24 @@ python src/blender_open_mcp/server.py
 
 #### **Server Options**
 ```bash
-# Custom port and host
+# Custom port and host with uvicorn
+uvicorn src.blender_open_mcp.server:app --host 0.0.0.0 --port 8080
+
+# Custom options with main.py
 python main.py --port 8080 --host 0.0.0.0
 
 # Get help
 python main.py --help
 ```
+
+#### **🔄 Startup Method Comparison**
+
+| Method | Best For | Features | Command |
+|--------|----------|----------|---------|
+| **Uvicorn** | Production, Development | FastAPI docs, hot reload, ASGI | `uvicorn src.blender_open_mcp.server:app --host 0.0.0.0 --port 8000` |
+| **Python main.py** | Quick testing, Auto-detection | Version detection, fallback | `python main.py --host 0.0.0.0 --port 8000` |
+
+**For Copilot Studio integration, we recommend using uvicorn** as it provides the full FastAPI experience with automatic OpenAPI documentation at `/docs`.
 
 #### **Verify Server is Running**
 ```bash
@@ -213,75 +240,129 @@ python verify_python_upgrade.py
 # Test simple server (if in simple mode)
 python test_simple_server.py
 
+# Test uvicorn FastAPI server
+curl -X GET http://localhost:8000/docs  # FastAPI docs
+curl -X GET http://localhost:8000/health  # Health check
+
 # Test manually (works for both modes)
 curl -X POST http://localhost:8000/ -H "Content-Type: application/json" -d '{"command": "health_check"}'
 ```
 
-### **Step 6: Create Public Tunnel**
+### **Step 6: Create Public Tunnel & Batch Files**
+
+#### **Create Startup Batch Files:**
 ```bash
-# Download cloudflared
+# Create start-server.bat
+echo '@echo off
+echo ================================
+echo Starting Blender MCP Server...
+echo ================================
+cd /d "E:\MyDev\MyMCP\blender-open-mcp"
+python main.py --host 0.0.0.0 --port 8000
+echo Server stopped.
+pause' > start-server.bat
+
+# Create start-tunnel.bat  
+echo '@echo off
+echo ================================
+echo Starting Cloudflare Tunnel...
+echo Domain: blender-open-mcp-de.com
+echo ================================
+cd /d "E:\MyDev\MyMCP\blender-open-mcp"
+.\cloudflared.exe tunnel --config tunnel-config.yml run
+echo Tunnel stopped.
+pause' > start-tunnel.bat
+```
+
+#### **Setup Cloudflare Tunnel:**
+```bash
+# Download cloudflared (if not already done)
 Invoke-WebRequest -Uri "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe" -OutFile "cloudflared.exe"
 
-# Start tunnel
-.\cloudflared.exe tunnel --url http://localhost:8000
+# Create tunnel (if not exists)
+.\cloudflared.exe tunnel create blender-mcp-tunnel
+
+# Configure tunnel-config.yml with your tunnel ID and credentials path
 ```
 
 ---
 
 ## 🌐 **Domain & Tunnel Management**
 
-### **Current Setup: Temporary Domain**
-- **URL:** `https://chicken-key-exclude-skating.trycloudflare.com`
-- **Type:** Temporary (changes on restart)
-- **Ownership:** Public, not owned by you
-- **Duration:** Active while tunnel is running
+### **Current Setup: Your Custom Domain**
+- **Your Domain:** `blender-open-mcp-de.com`
+- **Type:** Custom domain with Cloudflare
+- **Ownership:** Owned by you
+- **SSL:** Automatic HTTPS with Cloudflare
 
-### **Making It Permanent & Owned**
+### **Setting Up Your Permanent Domain (blender-open-mcp-de.com)**
 
-#### **Option 1: Cloudflare Named Tunnel (Recommended)**
+#### **Step 1: Configure Cloudflare Tunnel**
 
-1. **Setup Your Domain**
-   - Your domain: `BLENDER-OPEN-MCP-DE.COM`
-   - Ensure domain is added to your Cloudflare account
-   - Domain DNS should be managed by Cloudflare
-
-2. **Setup Named Tunnel**
+1. **Install Cloudflared**
    ```bash
-   # Login to Cloudflare
-   .\cloudflared.exe login
+   # Windows
+   Invoke-WebRequest -Uri "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe" -OutFile "cloudflared.exe"
    
-   # Create named tunnel
-   .\cloudflared.exe tunnel create blender-mcp
-   
-   # Configure tunnel to route to your root domain
-   .\cloudflared.exe tunnel route dns blender-mcp blender-open-mcp-de.com
-   
-   # Run with your custom domain
-   .\cloudflared.exe tunnel run blender-mcp
+   # OR download from: https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/install-and-setup/installation/
    ```
 
-3. **Your Setup Benefits:**
-   - ✅ **Your domain:** `blender-open-mcp-de.com`
-   - ✅ **Permanent:** Never changes
-   - ✅ **Controlled:** Only you can manage it
-   - ✅ **SSL Certificate:** Automatic HTTPS
-
-#### **Option 2: ngrok Static Domain**
-
-1. **Get ngrok Account**
-   - Sign up at [ngrok.com](https://ngrok.com)
-   - Upgrade to paid plan for static domains
-
-2. **Use Your Static Domain**
+2. **Authenticate with Cloudflare**
    ```bash
-   ngrok http 8000 --domain=your-static-domain.ngrok.app
+   # Login to your Cloudflare account
+   .\cloudflared.exe tunnel login
    ```
 
-#### **Option 3: Alternative Tunneling Services**
+3. **Create Named Tunnel**
+   ```bash
+   # Create a persistent tunnel
+   .\cloudflared.exe tunnel create blender-mcp-tunnel
+   
+   # Note the tunnel ID from the output - you'll need it
+   ```
 
-- **LocalTunnel:** Free with custom subdomains
-- **Serveo:** SSH-based tunneling
-- **PageKite:** Paid service with custom domains
+4. **Configure DNS Routing**
+   ```bash
+   # Route your domain to the tunnel
+   .\cloudflared.exe tunnel route dns blender-mcp-tunnel blender-open-mcp-de.com
+   ```
+
+5. **Create Configuration File**
+   Create `config.yml` in your project directory:
+   ```yaml
+   tunnel: YOUR_TUNNEL_ID_HERE
+   credentials-file: C:\Users\%USERNAME%\.cloudflared\YOUR_TUNNEL_ID_HERE.json
+   
+   ingress:
+     - hostname: blender-open-mcp-de.com
+       service: http://localhost:8000
+     - service: http_status:404
+   ```
+
+6. **Run the Tunnel**
+   ```bash
+   # Run with configuration file
+   .\cloudflared.exe tunnel --config config.yml run
+   
+   # OR run directly (simpler for testing)
+   .\cloudflared.exe tunnel run blender-mcp-tunnel
+   ```
+
+#### **Step 2: Verify Domain Setup**
+```bash
+# Test your domain is working
+curl https://blender-open-mcp-de.com/health
+
+# Test from PowerShell
+Invoke-WebRequest -Uri "https://blender-open-mcp-de.com/health" -Method GET
+```
+
+### **Benefits of Your Custom Domain Setup:**
+- ✅ **Permanent URL:** Never changes, reliable for Copilot Studio
+- ✅ **Professional:** Your own branded domain
+- ✅ **SSL Secure:** Automatic HTTPS encryption
+- ✅ **Fast:** Cloudflare CDN optimization
+- ✅ **Controlled:** Only you can manage access
 
 ---
 
@@ -289,34 +370,319 @@ Invoke-WebRequest -Uri "https://github.com/cloudflare/cloudflared/releases/lates
 
 ### **Step 1: Create Custom Connector**
 
-1. **Go to Copilot Studio**
+1. **Access Copilot Studio**
+   - Go to [Copilot Studio](https://copilotstudio.microsoft.com)
    - Navigate to `Custom connectors`
    - Click `New custom connector`
-   - Choose `Import from URL`
 
-2. **Configure Connection**
+2. **Import from URL**
+   - Choose `Import from OpenAPI URL`
+   - **OpenAPI URL:** `https://blender-open-mcp-de.com/openapi.json`
+   - Click `Import`
+
+3. **Configure General Settings**
    ```
-   OpenAPI URL: https://blender-open-mcp-de.com/openapi.json
+   Connector Name: BlenderMCP
+   Description: AI-powered Blender 3D control through MCP
    Host: blender-open-mcp-de.com
    Base URL: /
-   Authentication: None
+   Scheme: HTTPS
    ```
 
-### **Step 2: Create Copilot Agent**
+4. **Security Configuration**
+   - Authentication Type: `No authentication` (for now)
+   - *Optional: Add API key authentication later for security*
+
+### **Step 2: Define Key Actions**
+
+Add these essential actions to your connector:
+
+#### **Action 1: Send AI Prompt**
+```
+Name: SendPrompt
+Summary: Send natural language commands to Blender via AI
+Description: Uses AI to interpret and execute Blender commands
+
+Operation ID: send_prompt
+HTTP Method: POST
+URL: /api/ai/prompt
+
+Request Body:
+{
+  "prompt": {
+    "type": "string",
+    "description": "Natural language command for Blender",
+    "required": true
+  },
+  "model": {
+    "type": "string", 
+    "description": "AI model to use",
+    "default": "llama3.2"
+  }
+}
+
+Response:
+{
+  "response": "string",
+  "success": "boolean", 
+  "blender_result": "object"
+}
+```
+
+#### **Action 2: Get Scene Info**
+```
+Name: GetSceneInfo
+Summary: Get current Blender scene information
+Description: Retrieves list of objects and scene details
+
+Operation ID: get_scene_info  
+HTTP Method: GET
+URL: /api/blender/scene
+
+Response:
+{
+  "objects": "array",
+  "active_object": "string",
+  "scene_name": "string"
+}
+```
+
+#### **Action 3: Create Object**
+```
+Name: CreateObject
+Summary: Create 3D object in Blender
+Description: Creates primitives like cubes, spheres, cylinders
+
+Operation ID: create_object
+HTTP Method: POST  
+URL: /api/blender/create
+
+Request Body:
+{
+  "type": {
+    "type": "string",
+    "description": "Object type (cube, sphere, cylinder, etc.)",
+    "required": true
+  },
+  "name": {
+    "type": "string", 
+    "description": "Object name",
+    "required": false
+  },
+  "location": {
+    "type": "array",
+    "description": "X,Y,Z coordinates [x,y,z]", 
+    "required": false
+  }
+}
+```
+
+#### **Action 4: Execute Blender Code**
+```
+Name: ExecuteBlenderCode
+Summary: Execute Python code in Blender
+Description: Runs custom Python scripts in Blender
+
+Operation ID: execute_code
+HTTP Method: POST
+URL: /api/blender/code
+
+Request Body:
+{
+  "code": {
+    "type": "string",
+    "description": "Python code to execute",
+    "required": true
+  }
+}
+```
+
+### **Step 3: Test Your Connector**
+
+1. **Test Connection**
+   - Go to `Test` tab in your connector
+   - Create a new connection
+   - Test each action:
+
+2. **Test Health Check**
+   ```
+   Action: GET /health
+   Expected Response: {"status": "healthy", "blender_connected": true}
+   ```
+
+3. **Test Scene Info**
+   ```
+   Action: GetSceneInfo
+   Expected Response: List of current Blender objects
+   ```
+
+4. **Test Object Creation**
+   ```
+   Action: CreateObject
+   Body: {"type": "cube", "name": "test_cube", "location": [0,0,0]}
+   Expected Response: Object creation confirmation
+   ```
+
+### **Step 4: Create Your Copilot Agent**
 
 1. **Create New Agent**
-   - Name: "Blender Control Agent"
-   - Description: "AI-powered Blender 3D control"
+   - Name: `Blender 3D Assistant`
+   - Description: `AI-powered assistant for controlling Blender 3D software`
 
-2. **Add Custom Connector**
-   - Go to `Knowledge & Actions`
-   - Add your BlenderMCP connector
-   - Enable all operations
+2. **Add Your Connector**
+   - Go to `Actions` → `Add an action`
+   - Select your `BlenderMCP` connector
+   - Enable all actions you want to use
 
-### **Step 3: Test Connection**
-   - Go to connector `Test` tab
-   - Create connection
-   - Test `health` operation
+3. **Configure Instructions**
+   Add this system prompt to your agent:
+   ```
+   You are a Blender 3D assistant that can control Blender software through natural language commands. 
+   
+   You can:
+   - Create and modify 3D objects (cubes, spheres, cylinders, etc.)
+   - Get information about the current scene
+   - Apply materials and colors to objects
+   - Execute Python code for advanced operations
+   - Help with Blender workflows and techniques
+   
+   When users ask you to create or modify objects, use the appropriate actions to control Blender directly.
+   Always confirm what you've done and describe the results.
+   
+   Available object types: cube, sphere, cylinder, cone, torus, plane, monkey
+   Default location is [0,0,0] if not specified.
+   Use natural, helpful responses.
+   ```
+
+### **Step 5: Enhanced Prompt Examples**
+
+Configure your agent to handle these types of requests:
+
+#### **Basic Object Creation**
+```
+User: "Create a red cube"
+Agent Action: CreateObject → {"type": "cube", "name": "red_cube"}
+Then: SendPrompt → {"prompt": "Color the cube red"}
+```
+
+#### **AI-Powered Commands**
+```
+User: "Create a beautiful artistic scene"
+Agent Action: SendPrompt → {"prompt": "Create an artistic scene with multiple objects, good lighting, and interesting composition"}
+```
+
+#### **Scene Information**
+```
+User: "What's in my Blender scene?"
+Agent Action: GetSceneInfo
+Agent Response: Lists all objects with positions and properties
+```
+
+#### **Complex Operations**
+```
+User: "Create 5 colored spheres in a circle"
+Agent Action: ExecuteBlenderCode → {complex Python script for multiple spheres}
+```
+
+### **Step 6: Advanced Configuration**
+
+#### **Add Error Handling**
+Configure your agent to handle common errors:
+- Server connection issues
+- Invalid object types
+- Blender not responding
+
+#### **Add Security (Optional)**
+```bash
+# Add API key authentication to your server
+python main.py --api-key YOUR_SECRET_KEY
+
+# Update connector with API key header:
+# Header: X-API-Key = YOUR_SECRET_KEY
+```
+
+#### **Add Rate Limiting**
+Protect your server from overuse:
+```python
+# In your server configuration
+RATE_LIMIT = "10/minute"  # 10 requests per minute
+```
+
+### **Step 7: Production Deployment**
+
+#### **🚀 Complete Setup with Batch Files**
+
+Create two batch files for easy startup:
+
+**1. Create `start-server.bat`:**
+```batch
+@echo off
+echo ================================
+echo Starting Blender MCP Server...
+echo ================================
+cd /d "E:\MyDev\MyMCP\blender-open-mcp"
+python main.py --host 0.0.0.0 --port 8000
+echo Server stopped.
+pause
+```
+
+**2. Create `start-tunnel.bat`:**
+```batch
+@echo off
+echo ================================
+echo Starting Cloudflare Tunnel...
+echo Domain: blender-open-mcp-de.com
+echo ================================
+cd /d "E:\MyDev\MyMCP\blender-open-mcp"
+.\cloudflared.exe tunnel --config tunnel-config.yml run
+echo Tunnel stopped.
+pause
+```
+
+**3. Update `tunnel-config.yml`:**
+```yaml
+tunnel: YOUR_TUNNEL_ID_HERE
+credentials-file: C:\Users\YOUR_USERNAME\.cloudflared\YOUR_TUNNEL_ID.json
+
+ingress:
+  - hostname: blender-open-mcp-de.com
+    service: http://localhost:8000
+  - hostname: www.blender-open-mcp-de.com  
+    service: http://localhost:8000
+  - service: http_status:404
+```
+
+#### **🎯 Daily Startup Process**
+
+**Step 1: Start MCP Server**
+```bash
+# Open first PowerShell window
+.\start-server.bat
+```
+
+**Step 2: Start Cloudflare Tunnel** 
+```bash
+# Open second PowerShell window
+.\start-tunnel.bat  
+```
+
+**Step 3: Verify Both Services**
+```bash
+# Test local server
+Invoke-WebRequest -Uri "http://localhost:8000/docs" -UseBasicParsing
+
+# Test public domain
+Invoke-WebRequest -Uri "https://blender-open-mcp-de.com/docs" -UseBasicParsing
+```
+
+#### **⚡ Alternative: Install as Windows Service**
+```bash
+# Install tunnel as Windows service (optional)
+.\cloudflared.exe service install
+
+# OR run in background
+Start-Process -FilePath ".\cloudflared.exe" -ArgumentList "tunnel", "--config", "tunnel-config.yml", "run" -WindowStyle Hidden
+```
 
 ---
 
@@ -392,10 +758,32 @@ Invoke-WebRequest -Uri "https://github.com/cloudflare/cloudflared/releases/lates
 - ✅ **Verify Host:** Use domain only, no `https://`
 - ✅ **Test Tunnel:** Manually test endpoints in browser
 
-#### **503 Service Unavailable**
-- ✅ **Check Blender:** Ensure MCP addon is running
-- ✅ **Verify Port:** Blender should listen on 9999 (default) or 9876
-- ✅ **Restart Server:** Stop and restart with `python main.py`
+#### **503 Service Unavailable (Power Platform Connector)**
+- ✅ **Check Local Server:** Ensure MCP server is running on port 8000
+  ```bash
+  netstat -an | findstr "8000"  # Should show LISTENING
+  ```
+- ✅ **Check Cloudflare Tunnel:** Ensure tunnel is connecting properly
+  ```bash
+  .\cloudflared.exe tunnel --config tunnel-config.yml run
+  ```
+- ✅ **Fix Credentials Path:** Update tunnel-config.yml with correct user path
+  ```yaml
+  credentials-file: C:\Users\YOUR_ACTUAL_USERNAME\.cloudflared\YOUR_TUNNEL_ID.json
+  ```
+- ✅ **Test Local First:** Verify local server responds before testing public domain
+  ```bash
+  Invoke-WebRequest -Uri "http://localhost:8000/docs" -UseBasicParsing
+  ```
+- ✅ **Clean Restart:** Kill all processes and restart both services
+  ```bash
+  taskkill /F /IM python.exe /T
+  taskkill /F /IM cloudflared.exe /T
+  .\start-server.bat  # In first window
+  .\start-tunnel.bat  # In second window
+  ```
+- ✅ **Check Blender Connection:** Ensure MCP addon is running (port 9876)
+- ✅ **Verify Domain:** Test `https://blender-open-mcp-de.com/docs` directly in browser
 
 #### **AI Not Responding**
 - ✅ **Check Ollama:** Ensure service is running on 11434
@@ -527,14 +915,22 @@ async def custom_operation(request: CustomRequest):
 ```
 ✅ Python Version: 3.11+ (Full MCP Mode) / 3.8+ (Simple Mode)
 ✅ FastMCP Package: Installed (for Python 3.10+)
-✅ Blender MCP Addon: Running (port 9999)
+✅ Blender MCP Addon: Running (port 9876)
 ✅ MCP Server: Running (port 8000) - Auto-detected mode
 ✅ Ollama AI Server: Optional (port 11434) with llama3.2
-✅ Cloudflare Tunnel: Optional - for external access
-✅ Public URL: Available when tunnel is active
+✅ Cloudflare Tunnel: Configured with static domain
+✅ Static Domain: blender-open-mcp-de.com (permanent)
+✅ Batch Files: start-server.bat & start-tunnel.bat created
+✅ Tunnel Config: tunnel-config.yml with proper credentials path
 ✅ Full Integration: Functional with all MCP features
-✅ Copilot Studio: Ready for connection
+✅ Power Platform: Ready for connector testing
 ```
+
+### **🎯 Quick Daily Startup:**
+1. **Double-click** `start-server.bat` → Wait for "Connected to Blender"
+2. **Double-click** `start-tunnel.bat` → Wait for tunnel connection
+3. **Test:** Open `https://blender-open-mcp-de.com/docs` in browser
+4. **Configure:** Power Platform connector with your domain
 
 ---
 
