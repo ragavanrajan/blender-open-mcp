@@ -1196,7 +1196,22 @@ You'll know the integration is working when:
 #### **Problem**: Getting "Communication error: Unknown command type"  
 **Solution**: The Blender addon doesn't support that command. Use these working alternatives:
 - For AI prompts → Use `ExecuteCodeREST` instead
-- For materials → Use `ExecuteCodeREST` with material creation code
+- For materials → Use `ApplyMaterialREST` endpoint (now fixed!)
+
+#### **Problem**: Material application fails with "Unknown command type: apply_material"
+**Solution**: ✅ **FIXED!** The ApplyMaterial endpoint now correctly:
+- Sends `set_material` command (compatible with Blender addon)
+- Maps `base_color` to `color` parameter automatically
+- Filters out unsupported parameters like `material_type`
+
+**Working Example**:
+```json
+{
+  "material_name": "gold",
+  "material_type": "Principled",
+  "base_color": [1.0, 0.8, 0.0, 1.0]
+}
+```
 
 #### **Problem**: Location/rotation/scale errors
 **Solution**: Ensure arrays have exactly 3 numbers:
@@ -1229,7 +1244,37 @@ Parameters:
 - Z (number): Z position (default: 0)
 ```
 
-#### **Action 2: ExecuteCodeREST**
+#### **Action 2: ApplyMaterialREST** ✨ **NEWLY FIXED**
+```
+Summary: Apply Material to Object
+Description: Apply materials and colors to objects in Blender
+Operation ID: ApplyMaterialREST
+URL: /api/v2/objects/{objectName}/material
+Method: POST
+
+Body Template:
+{
+  "material_name": "gold",
+  "material_type": "Principled",
+  "base_color": [1.0, 0.8, 0.0, 1.0]
+}
+
+Parameters:
+- ObjectName (path): Name of object to apply material to
+- MaterialName (text): Name for the material
+- MaterialType (text): Type of material (optional - for documentation only)
+- Red (number): Red color value 0.0-1.0
+- Green (number): Green color value 0.0-1.0  
+- Blue (number): Blue color value 0.0-1.0
+- Alpha (number): Alpha value 0.0-1.0 (default: 1.0)
+
+✅ Fixed Issues:
+- Now correctly sends 'set_material' command instead of 'apply_material'
+- Automatically maps 'base_color' to 'color' parameter
+- Filters out unsupported parameters like 'material_type'
+```
+
+#### **Action 3: ExecuteCodeREST**
 ```
 Summary: Execute Python Code
 Description: Run Python scripts in Blender for complex operations
@@ -1248,7 +1293,7 @@ Parameters:
 - Description (text): What the code does
 ```
 
-#### **Action 3: GetSceneInfoREST**
+#### **Action 4: GetSceneInfoREST**
 ```
 Summary: Get Scene Information  
 Description: Get current scene objects and properties

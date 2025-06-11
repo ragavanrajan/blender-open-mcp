@@ -382,10 +382,25 @@ class RESTHTTPHandler(BaseHTTPRequestHandler):
             if "material_name" not in params:
                 params["material_name"] = f"{object_name}_Material"
             
-            # Add object name to params
+            # Add object name to params and map base_color to color
             params["object_name"] = object_name
+            if "base_color" in params:
+                params["color"] = params.pop("base_color")
+            
+            # Filter out unsupported parameters for set_material
+            # The Blender addon only accepts: object_name, material_name, create_if_missing, color
+            valid_params = {}
+            if "object_name" in params:
+                valid_params["object_name"] = params["object_name"] 
+            if "material_name" in params:
+                valid_params["material_name"] = params["material_name"]
+            if "color" in params:
+                valid_params["color"] = params["color"]
+            if "create_if_missing" in params:
+                valid_params["create_if_missing"] = params["create_if_missing"]
+            
             blender = get_blender_connection()
-            result = blender.send_command("apply_material", params)
+            result = blender.send_command("set_material", valid_params)
             return {"status": "success", "message": "Material applied successfully", "data": result}
         except Exception as e:
             return {"status": "error", "message": str(e), "error_code": "BLENDER_ERROR"}

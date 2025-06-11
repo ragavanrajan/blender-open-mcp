@@ -331,8 +331,8 @@ definitions:
     properties:
       material_name:
         type: string
-        description: Name of material to create/apply
-        example: "RedMaterial"
+        description: Name of material to create/apply. If not provided, defaults to "{objectName}_Material"
+        example: "GoldMaterial"
       base_color:
         type: array
         items:
@@ -341,13 +341,17 @@ definitions:
           maximum: 1
         minItems: 4
         maxItems: 4
-        description: RGBA color values [R, G, B, A] from 0.0 to 1.0
-        example: [0.8, 0.2, 0.2, 1.0]
+        description: RGBA color values [R, G, B, A] from 0.0 to 1.0. This parameter is automatically mapped to 'color' for the Blender addon.
+        example: [1.0, 0.8, 0.0, 1.0]
       material_type:
         type: string
         default: "Principled"
-        description: Type of material to create
+        description: Type of material to create (for documentation only - filtered out internally)
         example: "Principled"
+    example:
+      material_name: "gold"
+      material_type: "Principled"  
+      base_color: [1.0, 0.8, 0.0, 1.0]
 
   ExecuteCodeRequest:
     type: object
