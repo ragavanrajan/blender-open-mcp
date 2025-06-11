@@ -8,13 +8,13 @@ A comprehensive solution for controlling Blender remotely via REST API and MCP p
 
 ## 🚀 Quick Start
 
-### Option A: Simple Start (Recommended)
+### Option A: Complete Start (Recommended)
 ```bash
-# Start the REST server (separate endpoints)
-./scripts/start/start-rest-server.ps1
-
-# Or start everything (server + tunnel)
+# Start everything (server + tunnel) - Recommended
 ./scripts/start/start-everything.ps1
+
+# Or start REST server only (for development without tunnel)
+./scripts/start/start-rest-server.ps1
 ```
 
 ### Option B: Manual Start

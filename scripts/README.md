@@ -25,11 +25,11 @@ Scripts to start various components of BlenderMCP.
 
 ### 🌟 Recommended Startup
 ```bash
-# For REST endpoints (recommended)
-./scripts/start/start-rest-server.ps1
-
-# For complete setup (server + tunnel)
+# For complete setup (server + tunnel) - Recommended
 ./scripts/start/start-everything.ps1
+
+# For development only (REST endpoints without tunnel)
+./scripts/start/start-rest-server.ps1
 ```
 
 ## 🧪 Test Scripts (`test/`)
@@ -83,7 +83,10 @@ python scripts/test/simple-test.py
 
 ### 🚀 Daily Development
 ```bash
-# Start REST server for development
+# Start everything (server + tunnel) for full access
+./scripts/start/start-everything.ps1
+
+# Or start REST server only for local development
 ./scripts/start/start-rest-server.ps1
 ```
 
@@ -125,4 +128,4 @@ If a script fails:
 
 ---
 
-**🚀 Start with `start-everything.ps1` for a complete setup, or `start-rest-server.ps1` for development!** 
+**🚀 Start with `start-everything.ps1` (recommended for server + tunnel), or `start-rest-server.ps1` for local development only!** 

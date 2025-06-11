@@ -895,10 +895,10 @@ python -c "import sys; sys.path.insert(0, 'src'); from blender_open_mcp.simple_s
 
 #### **Option B: REST Endpoints (Recommended)**
 ```bash
-# Start REST server (port 8000)
-python scripts/start/start-rest-server.py
+# Start everything (server + tunnel) - Recommended
+./scripts/start/start-everything.ps1
 
-# OR start with PowerShell script
+# OR start REST server only (local development)
 ./scripts/start/start-rest-server.ps1
 
 # OR start directly
