@@ -860,17 +860,115 @@ When running Python 3.10+ with FastMCP installed, you get additional features:
 
 ### **Available API Endpoints**
 
+#### **🔧 Option A: Single Endpoint (Legacy)**
+| Endpoint | Method | Purpose | Request Body |
+|----------|--------|---------|--------------|
+| `/` | POST | All operations | `{"command": "health_check"}` |
+| `/` | POST | Scene info | `{"command": "get_scene_info"}` |
+| `/` | POST | Create object | `{"command": "create_object", "params": {...}}` |
+| `/` | POST | Modify object | `{"command": "modify_object", "params": {...}}` |
+| `/` | POST | Execute code | `{"command": "execute_code", "params": {...}}` |
+
+#### **🚀 Option B: REST Endpoints (Recommended)**
 | Endpoint | Method | Purpose | Example |
 |----------|--------|---------|---------|
-| `/health` | GET | System status | Health check |
-| `/api/blender/scene` | GET | Scene info | Get objects list |
-| `/api/blender/create` | POST | Create object | Add cube/sphere |
-| `/api/blender/modify` | PUT | Modify object | Move/rotate/scale |
-| `/api/blender/delete/{id}` | DELETE | Delete object | Remove by name |
-| `/api/blender/material` | POST | Apply material | Set color/texture |
-| `/api/blender/code` | POST | Execute Python | Run Blender script |
-| `/api/ai/prompt` | POST | AI conversation | Ask questions |
-| `/api/ai/command` | POST | AI→Blender | Natural language |
+| `/api/v2/health` | GET | System status | Health check with timestamp |
+| `/api/v2/scene` | GET | Scene info | Get objects list |
+| `/api/v2/objects` | POST | Create object | Add cube/sphere |
+| `/api/v2/objects/{name}` | GET | Get object info | Retrieve object details |
+| `/api/v2/objects/{name}` | PUT | Modify object | Move/rotate/scale |
+| `/api/v2/objects/{name}` | DELETE | Delete object | Remove by name |
+| `/api/v2/objects/{name}/material` | POST | Apply material | Set color/texture |
+| `/api/v2/execute` | POST | Execute Python | Run Blender script |
+| `/api/v2/ai/prompt` | POST | AI conversation | Ask questions |
+
+### **🔄 Starting the Correct Server**
+
+#### **Option A: Single Endpoint (Legacy)**
+```bash
+# Start simple server (port 8000)
+python scripts/start/start-simple-server.py
+
+# OR start directly
+python -c "import sys; sys.path.insert(0, 'src'); from blender_open_mcp.simple_server import run_server; run_server('0.0.0.0', 8000)"
+```
+
+#### **Option B: REST Endpoints (Recommended)**
+```bash
+# Start REST server (port 8000)
+python scripts/start/start-rest-server.py
+
+# OR start with PowerShell script
+./scripts/start/start-rest-server.ps1
+
+# OR start directly
+python -c "import sys; sys.path.insert(0, 'src'); from blender_open_mcp.rest_server import run_rest_server; run_rest_server('0.0.0.0', 8000)"
+```
+
+### **📊 Testing Both API Approaches**
+
+#### **Test Single Endpoint (Option A)**
+```bash
+# Health check
+curl -X POST http://localhost:8000/ \
+  -H "Content-Type: application/json" \
+  -d '{"command": "health_check"}'
+
+# Scene info  
+curl -X POST http://localhost:8000/ \
+  -H "Content-Type: application/json" \
+  -d '{"command": "get_scene_info"}'
+
+# Create object
+curl -X POST http://localhost:8000/ \
+  -H "Content-Type: application/json" \
+  -d '{"command": "create_object", "params": {"type": "CUBE", "name": "TestCube"}}'
+```
+
+#### **Test REST Endpoints (Option B)**
+```bash
+# Health check
+curl -X GET http://localhost:8000/api/v2/health
+
+# Scene info
+curl -X GET http://localhost:8000/api/v2/scene
+
+# Create object
+curl -X POST http://localhost:8000/api/v2/objects \
+  -H "Content-Type: application/json" \
+  -d '{"type": "CUBE", "name": "TestCube", "location": [0, 0, 0]}'
+
+# Get object info
+curl -X GET http://localhost:8000/api/v2/objects/TestCube
+
+# Modify object
+curl -X PUT http://localhost:8000/api/v2/objects/TestCube \
+  -H "Content-Type: application/json" \
+  -d '{"location": [2, 2, 2], "rotation": [0, 0, 45]}'
+
+# Delete object
+curl -X DELETE http://localhost:8000/api/v2/objects/TestCube
+```
+
+### **🌐 Public Access via Tunnel**
+
+#### **Option A URLs (Legacy)**
+```bash
+# Base URL: https://blender-open-mcp-de.com/
+curl -X POST https://blender-open-mcp-de.com/ \
+  -H "Content-Type: application/json" \
+  -d '{"command": "health_check"}'
+```
+
+#### **Option B URLs (Recommended)**
+```bash
+# Base URL: https://blender-open-mcp-de.com/api/v2/
+curl -X GET https://blender-open-mcp-de.com/api/v2/health
+curl -X GET https://blender-open-mcp-de.com/api/v2/scene
+curl -X POST https://blender-open-mcp-de.com/api/v2/objects \
+  -H "Content-Type: application/json" \
+  -d '{"type": "SPHERE", "name": "TestSphere"}'
+```
 
 ### **Server Configuration**
 
