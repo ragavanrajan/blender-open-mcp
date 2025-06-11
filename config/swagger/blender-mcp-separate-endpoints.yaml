@@ -49,7 +49,19 @@ paths:
   /objects:
     post:
       summary: Create Object
-      description: Create a new 3D object in Blender
+      description: |
+        Create a new 3D object in Blender. 
+        
+        **IMPORTANT**: The 'type' field must be one of the predefined constants:
+        - CUBE - Creates a standard cube mesh
+        - SPHERE - Creates a UV sphere mesh  
+        - CYLINDER - Creates a cylinder mesh
+        - PLANE - Creates a flat plane mesh
+        - CONE - Creates a cone mesh
+        - TORUS - Creates a torus (donut) mesh
+        - MONKEY - Creates Suzanne (Blender's mascot) mesh
+        
+        Do NOT use natural language descriptions in the 'type' field.
       operationId: CreateObject
       parameters:
         - name: body
@@ -63,7 +75,7 @@ paths:
           schema:
             $ref: "#/definitions/ObjectResponse"
         "400":
-          description: Bad request - invalid parameters
+          description: Bad request - invalid object type or parameters
           schema:
             $ref: "#/definitions/ErrorResponse"
         "500":
@@ -242,11 +254,21 @@ definitions:
       type:
         type: string
         enum: [CUBE, SPHERE, CYLINDER, PLANE, CONE, TORUS, MONKEY]
-        description: Type of object to create
+        description: |
+          Type of object to create. Must be one of the exact constants:
+          - CUBE: Standard cube mesh
+          - SPHERE: UV sphere mesh
+          - CYLINDER: Cylinder mesh
+          - PLANE: Flat plane mesh
+          - CONE: Cone mesh
+          - TORUS: Torus (donut) mesh
+          - MONKEY: Suzanne (Blender mascot) mesh
+          
+          ⚠️ Do NOT use natural language descriptions like "Create a cube" - use only the exact constants above.
         example: "CUBE"
       name:
         type: string
-        description: Name for the new object
+        description: Optional name for the new object. If not provided, Blender will auto-generate a name.
         example: "MyCube"
       location:
         type: array
@@ -255,7 +277,7 @@ definitions:
         minItems: 3
         maxItems: 3
         default: [0, 0, 0]
-        description: 3D position [X, Y, Z]
+        description: 3D position [X, Y, Z] coordinates where to place the object
         example: [1.0, 2.0, 0.5]
       rotation:
         type: array
@@ -273,7 +295,7 @@ definitions:
         minItems: 3
         maxItems: 3
         default: [1, 1, 1]
-        description: 3D scale [SX, SY, SZ]
+        description: 3D scale [SX, SY, SZ] multipliers
         example: [2.0, 1.0, 1.0]
 
   ModifyObjectRequest:
@@ -306,24 +328,26 @@ definitions:
 
   ApplyMaterialRequest:
     type: object
-    required:
-      - material_name
     properties:
       material_name:
         type: string
-        description: Name of material to apply
-        example: "Gold"
-      color:
+        description: Name of material to create/apply
+        example: "RedMaterial"
+      base_color:
         type: array
         items:
           type: number
           minimum: 0
           maximum: 1
-        minItems: 3
-        maxItems: 3
-        default: [0.5, 0.5, 0.5]
-        description: RGB color values [R, G, B] from 0.0 to 1.0
-        example: [1.0, 0.8, 0.0]
+        minItems: 4
+        maxItems: 4
+        description: RGBA color values [R, G, B, A] from 0.0 to 1.0
+        example: [0.8, 0.2, 0.2, 1.0]
+      material_type:
+        type: string
+        default: "Principled"
+        description: Type of material to create
+        example: "Principled"
 
   ExecuteCodeRequest:
     type: object
@@ -332,8 +356,8 @@ definitions:
     properties:
       code:
         type: string
-        description: Python code to execute
-        example: "bpy.ops.mesh.primitive_cube_add(location=(0, 0, 2))"
+        description: Python code to execute in Blender
+        example: "import bpy\nbpy.ops.mesh.primitive_cube_add(location=(0, 0, 2))"
       description:
         type: string
         description: Description of what the code does

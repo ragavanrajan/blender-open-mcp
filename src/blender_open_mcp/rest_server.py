@@ -303,6 +303,42 @@ class RESTHTTPHandler(BaseHTTPRequestHandler):
             if "type" not in params:
                 return {"status": "error", "message": "Missing required field: type", "error_code": "MISSING_FIELD"}
             
+            # Validate object type
+            valid_types = ["CUBE", "SPHERE", "CYLINDER", "PLANE", "CONE", "TORUS", "MONKEY"]
+            object_type = params["type"]
+            if object_type not in valid_types:
+                return {
+                    "status": "error", 
+                    "message": f"Invalid object type: '{object_type}'. Must be one of: {', '.join(valid_types)}", 
+                    "error_code": "INVALID_OBJECT_TYPE"
+                }
+            
+            # Validate location array if provided
+            if "location" in params:
+                location = params["location"]
+                if not isinstance(location, list) or len(location) != 3:
+                    return {"status": "error", "message": "Location must be an array of 3 numbers [X, Y, Z]", "error_code": "INVALID_LOCATION"}
+                if not all(isinstance(x, (int, float)) for x in location):
+                    return {"status": "error", "message": "Location values must be numbers", "error_code": "INVALID_LOCATION"}
+            
+            # Validate rotation array if provided
+            if "rotation" in params:
+                rotation = params["rotation"]
+                if not isinstance(rotation, list) or len(rotation) != 3:
+                    return {"status": "error", "message": "Rotation must be an array of 3 numbers [RX, RY, RZ]", "error_code": "INVALID_ROTATION"}
+                if not all(isinstance(x, (int, float)) for x in rotation):
+                    return {"status": "error", "message": "Rotation values must be numbers", "error_code": "INVALID_ROTATION"}
+            
+            # Validate scale array if provided
+            if "scale" in params:
+                scale = params["scale"]
+                if not isinstance(scale, list) or len(scale) != 3:
+                    return {"status": "error", "message": "Scale must be an array of 3 numbers [SX, SY, SZ]", "error_code": "INVALID_SCALE"}
+                if not all(isinstance(x, (int, float)) for x in scale):
+                    return {"status": "error", "message": "Scale values must be numbers", "error_code": "INVALID_SCALE"}
+                if any(x <= 0 for x in scale):
+                    return {"status": "error", "message": "Scale values must be positive numbers", "error_code": "INVALID_SCALE"}
+            
             blender = get_blender_connection()
             result = blender.send_command("create_object", params)
             return {"status": "success", "message": "Object created successfully", "data": result}
@@ -332,9 +368,19 @@ class RESTHTTPHandler(BaseHTTPRequestHandler):
     def handle_apply_material(self, object_name: str, params: Dict[str, Any]) -> Dict[str, Any]:
         """Handle applying materials"""
         try:
-            # Validate required fields
+            # Validate base_color array if provided
+            if "base_color" in params:
+                base_color = params["base_color"]
+                if not isinstance(base_color, list) or len(base_color) != 4:
+                    return {"status": "error", "message": "base_color must be an array of 4 numbers [R, G, B, A]", "error_code": "INVALID_COLOR"}
+                if not all(isinstance(x, (int, float)) for x in base_color):
+                    return {"status": "error", "message": "base_color values must be numbers", "error_code": "INVALID_COLOR"}
+                if any(x < 0 or x > 1 for x in base_color):
+                    return {"status": "error", "message": "base_color values must be between 0.0 and 1.0", "error_code": "INVALID_COLOR"}
+            
+            # Set default material name if not provided
             if "material_name" not in params:
-                return {"status": "error", "message": "Missing required field: material_name", "error_code": "MISSING_FIELD"}
+                params["material_name"] = f"{object_name}_Material"
             
             # Add object name to params
             params["object_name"] = object_name

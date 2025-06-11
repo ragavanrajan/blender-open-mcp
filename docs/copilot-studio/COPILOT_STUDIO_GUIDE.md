@@ -1102,3 +1102,163 @@ You'll know the integration is working when:
 ---
 
 **🎯 Your BlenderMCP integration with Copilot Studio is now complete! Test each action and start building amazing AI-powered Blender automations!** 🚀 
+
+## 🎯 **Copilot Studio Prompt Examples for BlenderMCP**
+
+### **✅ CORRECT Object Creation Examples**
+
+#### **Example 1: Simple Cube Creation**
+**User Input**: "Create a cube"
+**Action**: `CreateObjectREST`
+**Body**:
+```json
+{
+  "type": "CUBE",
+  "name": "MyCube",
+  "location": [0, 0, 0]
+}
+```
+
+#### **Example 2: Positioned Sphere** 
+**User Input**: "Create a sphere at position 2, 0, 1"
+**Action**: `CreateObjectREST`
+**Body**:
+```json
+{
+  "type": "SPHERE", 
+  "name": "MySphere",
+  "location": [2, 0, 1]
+}
+```
+
+### **❌ COMMON MISTAKES - DO NOT USE**
+
+#### **Mistake 1: Natural Language in Type Field**
+```json
+{
+  "type": "Create a red cube",  ❌ WRONG!
+  "name": "MyCube"
+}
+```
+**Error**: `Invalid object type: 'Create a red cube'. Must be one of: CUBE, SPHERE, CYLINDER, PLANE, CONE, TORUS, MONKEY`
+
+#### **Mistake 2: Descriptive Object Types**
+```json
+{
+  "type": "cube object",  ❌ WRONG!
+  "name": "MyCube"  
+}
+```
+
+### **🔧 VALID OBJECT TYPES**
+- `CUBE` - Standard cube mesh
+- `SPHERE` - UV sphere mesh  
+- `CYLINDER` - Cylinder mesh
+- `PLANE` - Flat plane mesh
+- `CONE` - Cone mesh
+- `TORUS` - Torus (donut) mesh
+- `MONKEY` - Suzanne (Blender mascot) mesh
+
+### **🎨 Complete Red Cube Example**
+
+#### **Step 1: Create the Cube**
+**Action**: `CreateObjectREST`
+**URL**: `/api/v2/objects`
+**Body**:
+```json
+{
+  "type": "CUBE",
+  "name": "RedCube",
+  "location": [0, 0, 0]
+}
+```
+
+#### **Step 2: Make it Red** 
+**Action**: `ExecuteCodeREST`
+**URL**: `/api/v2/execute`
+**Body**:
+```json
+{
+  "code": "import bpy\n\n# Get the cube\ncube = bpy.data.objects['RedCube']\n\n# Create red material\nmat = bpy.data.materials.new(name='RedMaterial')\nmat.use_nodes = True\nbsdf = mat.node_tree.nodes['Principled BSDF']\nbsdf.inputs['Base Color'].default_value = (0.8, 0.2, 0.2, 1.0)\n\n# Apply material\ncube.data.materials.append(mat)",
+  "description": "Apply red material to cube"
+}
+```
+
+### **🚨 TROUBLESHOOTING GUIDE**
+
+#### **Problem**: Getting "Invalid object type" errors
+**Solution**: Always use EXACT object type constants:
+- ✅ Use: `"type": "CUBE"`
+- ❌ Don't use: `"type": "Create a cube"`
+- ❌ Don't use: `"type": "cube"`
+- ❌ Don't use: `"type": "CUBE object"`
+
+#### **Problem**: Getting "Communication error: Unknown command type"  
+**Solution**: The Blender addon doesn't support that command. Use these working alternatives:
+- For AI prompts → Use `ExecuteCodeREST` instead
+- For materials → Use `ExecuteCodeREST` with material creation code
+
+#### **Problem**: Location/rotation/scale errors
+**Solution**: Ensure arrays have exactly 3 numbers:
+- ✅ `"location": [1.0, 2.0, 0.5]`
+- ❌ `"location": [1, 2]` (missing Z)
+- ❌ `"location": "1, 2, 0"` (string instead of array)
+
+### **📋 Working Copilot Studio Actions**
+
+#### **Action 1: CreateObjectREST**
+```
+Summary: Create 3D Object
+Description: Create basic 3D objects in Blender
+Operation ID: CreateObjectREST
+URL: /api/v2/objects
+Method: POST
+
+Body Template:
+{
+  "type": "CUBE",
+  "name": "MyObject",
+  "location": [0, 0, 0]
+}
+
+Parameters:
+- ObjectType (choice): CUBE, SPHERE, CYLINDER, PLANE, CONE, TORUS, MONKEY
+- ObjectName (text): Name for the object
+- X (number): X position (default: 0)
+- Y (number): Y position (default: 0) 
+- Z (number): Z position (default: 0)
+```
+
+#### **Action 2: ExecuteCodeREST**
+```
+Summary: Execute Python Code
+Description: Run Python scripts in Blender for complex operations
+Operation ID: ExecuteCodeREST
+URL: /api/v2/execute
+Method: POST
+
+Body Template:
+{
+  "code": "{PythonCode}",
+  "description": "{Description}"
+}
+
+Parameters:
+- PythonCode (text): Python code to execute
+- Description (text): What the code does
+```
+
+#### **Action 3: GetSceneInfoREST**
+```
+Summary: Get Scene Information  
+Description: Get current scene objects and properties
+Operation ID: GetSceneInfoREST
+URL: /api/v2/scene
+Method: GET
+
+No body required.
+```
+
+---
+
+**🎯 Your BlenderMCP integration with Copilot Studio is now complete! Test each action and start building amazing AI-powered Blender automations!** 🚀 
